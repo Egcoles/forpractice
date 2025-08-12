@@ -10,28 +10,7 @@ namespace TodoApi.Repositories
     {
         private readonly DapperContextUsers _context = context;
 
-        // public async Task<(int totalCount, List<UserModel> users)> GetAllUsersAsync(int page, int size)
-        // {
-        //     using var connection = _context.CreateConnection();
-
-        //     var parameters = new DynamicParameters();
-        //     parameters.Add("@PageNumber", page, DbType.Int32);
-        //     parameters.Add("@PageSize", size, DbType.Int32);
-
-        //     using var multi = await connection.QueryMultipleAsync(
-        //         "sp_get_AllUsers",
-        //         parameters,
-        //         commandType: CommandType.StoredProcedure);
-
-        //     // Read totalCount from first result set
-        //     int totalCount = await multi.ReadFirstAsync<int>();
-
-        //     // Read users from second result set
-        //     var users = (await multi.ReadAsync<UserModel>()).ToList();
-
-        //     return (totalCount, users);
-        // }
-
+        //get all users data
         public async Task<IEnumerable<UserModel>> GetAllUsersAsync()
         {
             var query = "sp_get_AllUsers";
@@ -42,6 +21,7 @@ namespace TodoApi.Repositories
             );
         }
 
+        //user table display
         public async Task<IEnumerable<UserSummaryModel>> GetUserSummaryAsync()
         {
             var query = "sp_get_AllUsers";
@@ -52,18 +32,12 @@ namespace TodoApi.Repositories
             );
         }
 
-        public async Task<IEnumerable<UserModel>> GetSingleUserAsync(int UserId)
-        {
-            var users = await GetAllUsersAsync();
-            var user = 0;
-            return users
-            .Where(u => u.UserId == user);
-        }
-        public async Task<IEnumerable<RoutingModel>> GetAllApproversAsync()
+        //get Endorser and Approver
+        public async Task<IEnumerable<RoutingModel>> GetUsersByRoleAsync(int roleId)
         {
             var users = await GetAllUsersAsync();
             return users
-                .Where(u => u.RoleId == 33)
+                .Where(u => u.RoleId == roleId)
                 .Select(u => new RoutingModel
                 {
                     RoleId = u.RoleId ?? 0,
@@ -72,19 +46,7 @@ namespace TodoApi.Repositories
                 });
         }
 
-        public async Task<IEnumerable<RoutingModel>> GetAllAEndorsersAsync()
-        {
-            var users = await GetAllUsersAsync();
-            return users
-                .Where(u => u.RoleId == 32)
-                .Select(u => new RoutingModel
-                {
-                    RoleId = u.RoleId ?? 0,
-                    UserId = u.UserId,
-                    FullName = u.FullName
-                });
-        }
-
+        //insert new user
         public async Task CreateAsync(UserModel model)
         {
             var query = "sp_insert_users";
@@ -112,8 +74,67 @@ namespace TodoApi.Repositories
             await connection.ExecuteAsync(query, parameters, commandType: CommandType.StoredProcedure);
         }
 
-        
+
+
     }
 
-    
+
 }
+// REFFERENCES
+
+    //  public async Task<IEnumerable<RoutingModel>> GetRoutingApprovalAsync(RoutingModel model)
+    //     {
+    //         var query = "sp_GetRoutingApproval";
+    //         using var connection = _context.CreateConnection();
+    //         var parameters = new DynamicParameters();
+    //         parameters.Add("@RoleID", model.RoleId);
+    //         return await connection.QueryAsync<RoutingModel>(query, parameters, commandType: CommandType.StoredProcedure);
+    //     }
+    // public async Task<IEnumerable<RoutingModel>> GetAllApproversAsync()
+        // {
+        //     var users = await GetAllUsersAsync();
+        //     return users
+        //         .Where(u => u.RoleId == 33)
+        //         .Select(u => new RoutingModel
+        //         {
+        //             RoleId = u.RoleId ?? 0,
+        //             UserId = u.UserId,
+        //             FullName = u.FullName
+        //         });
+        // }
+
+        // public async Task<IEnumerable<RoutingModel>> GetAllAEndorsersAsync()
+        // {
+        //     var users = await GetAllUsersAsync();
+        //     return users
+        //         .Where(u => u.RoleId == 32)
+        //         .Select(u => new RoutingModel
+        //         {
+        //             RoleId = u.RoleId ?? 0,
+        //             UserId = u.UserId,
+        //             FullName = u.FullName
+        //         });
+        // }
+
+
+        // public async Task<(int totalCount, List<UserModel> users)> GetAllUsersAsync(int page, int size)
+        // {
+        //     using var connection = _context.CreateConnection();
+
+        //     var parameters = new DynamicParameters();
+        //     parameters.Add("@PageNumber", page, DbType.Int32);
+        //     parameters.Add("@PageSize", size, DbType.Int32);
+
+        //     using var multi = await connection.QueryMultipleAsync(
+        //         "sp_get_AllUsers",
+        //         parameters,
+        //         commandType: CommandType.StoredProcedure);
+
+        //     // Read totalCount from first result set
+        //     int totalCount = await multi.ReadFirstAsync<int>();
+
+        //     // Read users from second result set
+        //     var users = (await multi.ReadAsync<UserModel>()).ToList();
+
+        //     return (totalCount, users);
+        // }

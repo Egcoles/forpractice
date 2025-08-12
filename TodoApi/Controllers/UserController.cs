@@ -13,32 +13,23 @@ namespace TodoApi.Controllers
     {
         private readonly IUserRepository _userRepository = userRepository;
 
-        // [HttpGet("users")]
-        // public async Task<IActionResult> GetAllUsers(int page, int size)
-        // {
-        //     var (totalCount, users) = await _userRepository.GetAllUsersAsync(page, size);
-        //     return Ok(new { totalCount, users });
-        // }
-
+        //api to get all users
         [HttpGet("users")]
         public async Task<IActionResult> GetAllUsers()
         {
             var users = await _userRepository.GetAllUsersAsync();
             return Ok(users);
         }
-        [HttpGet("approvers")]
-        public async Task<IActionResult> GetAllApprovers()
+
+        //api to get user role
+        [HttpGet("users/by-role/{roleId}")]
+        public async Task<IActionResult> GetUsersByRole(int roleId)
         {
-            var approvers = await _userRepository.GetAllApproversAsync();
-            return Ok(approvers);
+            var users = await _userRepository.GetUsersByRoleAsync(roleId);
+            return Ok(users);
         }
 
-        [HttpGet("endorsers")]
-        public async Task<IActionResult> GetAllEndorsers()
-        {
-            var endorsers = await _userRepository.GetAllAEndorsersAsync();
-            return Ok(endorsers);
-        }
+        //api to get users necessary data
         [HttpGet("summary")]
         public async Task<IActionResult> GetUserSummary()
         {
@@ -46,6 +37,7 @@ namespace TodoApi.Controllers
             return Ok(summary);
         }
 
+        //api to create new user
         [HttpPost("create")]
         public async Task<IActionResult> CreateUser([FromForm] UserModel user)
         {
@@ -64,7 +56,7 @@ namespace TodoApi.Controllers
 
     }
 
-
+    //helper funtion 
     public static class PasswordHelper
     {
         public static string HashPassword(string password)
@@ -79,3 +71,23 @@ namespace TodoApi.Controllers
         }
     }
 }
+//Refferences
+     // [HttpGet("users")]
+        // public async Task<IActionResult> GetAllUsers(int page, int size)
+        // {
+        //     var (totalCount, users) = await _userRepository.GetAllUsersAsync(page, size);
+        //     return Ok(new { totalCount, users });
+        // }
+             // [HttpGet("approvers")]
+        // public async Task<IActionResult> GetAllApprovers()
+        // {
+        //     var approvers = await _userRepository.GetAllApproversAsync();
+        //     return Ok(approvers);
+        // }
+
+        // [HttpGet("endorsers")]
+        // public async Task<IActionResult> GetAllEndorsers()
+        // {
+        //     var endorsers = await _userRepository.GetAllAEndorsersAsync();
+        //     return Ok(endorsers);
+        // }
