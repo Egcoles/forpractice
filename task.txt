@@ -1,0 +1,79 @@
+CASES & Conditions FOR ADDING ROW
+ 1st row it require: Item, Description, Qty, Suppliers(at least one)
+ New row it require: item, Description, Qty 
+- check rows if has item, description, qty, supplier and price
+for supplier and price must have at least one 
+system will not  allow to add new row if one of them missing.
+row must not be empty.
+
+if one of the price field have value
+ then clear the error message  the rest of the price for better UX.
+
+if item and supplier is the same as the prev rows .
+- throw snackbar 'you selected the same item and supplier please double check your entry."
+
+
+
+FOR SUBMISSION 
+if user forgot pricess 
+it will validate on submit.
+it will check if row has 
+who is the supplier?
+what is the item ?
+how many qty?
+what is the description?
+
+
+
+
+
+
+Task
+- username on layout
+- edit and delete on user table
+- purchase requisition design (form)
+
+modification
+-department delete and edit
+
+
+CONDITIONS
+
+WHEN SELECTING PATICULAR ITEM Automatically set the unit
+Cannot input price
+
+Spread Operator (...):
+The spread operator is used to expand an iterable (like an array or string) into individual elements or to expand an object into key-value pairs.
+It is commonly used for:
+Creating shallow copies of arrays or objects: This allows modification of the copy without affecting the original.
+Concatenating arrays or merging objects: Elements or properties from multiple sources can be combined into a new data structure.
+Passing arguments to functions: Elements of an array can be passed as individual arguments to a function.
+Ternary Operator (condition ? expression1 : expression2):
+The ternary operator is a concise way to write conditional expressions, providing an alternative to simple if-else statements.
+It evaluates a condition. If the condition is true, expression1 is evaluated and its result is returned. If the condition is false, expression2 is evaluated and its result is returned.
+It is typically used for:
+Assigning values conditionally: A variable can be assigned one of two values based on a condition.
+Returning values conditionally: A function can return different values based on a condition.
+Key Differences:
+Purpose:
+The spread operator focuses on data manipulation (expanding and combining data structures), while the ternary operator focuses on conditional logic (choosing between two outcomes).
+Syntax:
+The spread operator uses ... before an iterable or object, while the ternary operator uses ? and : to separate the condition and the two possible expressions.
+Context:
+The spread operator is used within array literals, object literals, or function calls, whereas the ternary operator is used as an expression that evaluates to a single value.
+
+============================================================================================
+
+The double exclamation mark (!!) is not a standard, single operator in most programming languages. It's typically used as a double negation or logical NOT operator in sequence. It effectively converts a value to its boolean equivalent and then negates it, resulting in a boolean value. 
+
+
+Single ! (NOT): The single exclamation mark is the logical NOT operator. It inverts the truthiness of a value. If the value is considered true, !value will be false, and vice versa.
+Double !! (Double NOT): When used twice in a row, !!value first negates the value (using !value) and then negates the result again. This has the effect of converting the value to its boolean equivalent.
+
+    let str = "hello";
+    let num = 5;
+    let falsy = "";
+
+    console.log(!!str); // true
+    console.log(!!num); // true
+    console.log(!!falsy); // false
