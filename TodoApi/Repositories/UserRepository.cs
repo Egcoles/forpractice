@@ -21,6 +21,72 @@ namespace TodoApi.Repositories
             );
         }
 
+        public async Task<IEnumerable<UserList>> GetUserListsAsync()
+        {
+            var users = await GetAllUsersAsync();
+            return users
+                .Select(u => new UserList
+                {
+                    UserId = u.UserId,
+                    FullName = u.FullName
+                });
+        }
+
+        public async Task<IEnumerable<RoutingModel>> GetApproversAsync()
+        {
+            var query = "sp_GetAllApprover";
+            using var connection = _context.CreateConnection();
+            return await connection.QueryAsync<RoutingModel>(
+                query,
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        public async Task<IEnumerable<RoutingModel>> GetEndorsersAsync()
+        {
+            var query = "sp_GetALLEndorser";
+            using var connection = _context.CreateConnection();
+            return await connection.QueryAsync<RoutingModel>(
+                query,
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        public async Task<IEnumerable<Items>> GetAllItemsAsync()
+        {
+            var query = "sp_GetAllitems";
+            using var connection = _context.CreateConnection();
+            return await connection.QueryAsync<Items>(
+                query,
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        public async Task<IEnumerable<UnitByItemId>> GetUnitByItemIdAsync(int itemId)
+        {
+            var items = await GetAllItemsAsync();
+            return items
+            .Where(i => i.ItemId == itemId)
+            .Select(i => new UnitByItemId
+            {
+                ItemId = i.ItemId,
+                Unit = i.Unit
+            });
+           
+        }
+
+        public async Task<IEnumerable<Suppliers>> GetAllSuppliersAsync()
+        {
+            var query = "sp_GetAllSuppliers";
+            using var connection = _context.CreateConnection();
+            return await connection.QueryAsync<Suppliers>(
+                query,
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        
+
         //user table display
         public async Task<IEnumerable<UserSummaryModel>> GetUserSummaryAsync()
         {
@@ -45,6 +111,8 @@ namespace TodoApi.Repositories
                     FullName = u.FullName
                 });
         }
+
+ 
 
         //insert new user
         public async Task CreateAsync(UserModel model)

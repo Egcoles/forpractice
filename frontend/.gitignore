@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+.public
+.appsettings.json
+.appsettings.Development
+.task.txt
+.vscode/settings.json
+*.vscodeignore
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

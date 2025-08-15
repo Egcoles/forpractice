@@ -103,7 +103,7 @@ export default function DashboardLayout() {
               <MenuIcon />
             </IconButton>
             <Typography variant="h6" fontWeight={600} noWrap>
-              Your Company
+              Archangel Technologies, Inc.
             </Typography>
           </Box>
 

@@ -17,7 +17,7 @@ namespace TodoApi.Models
         public int? RoleId { get; set; }
         public int EndorserId { get; set; } = 0;
         public int ApproverId { get; set; } = 0;
-        public string UserStatus { get; set; } = "Active"; 
+        public string UserStatus { get; set; } = "Active";
         public string Location { get; set; } = string.Empty;
         public string Signature { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -36,14 +36,23 @@ namespace TodoApi.Models
         public string UserStatus { get; set; } = "Active";
     }
 
+    public class UserList
+    {
+        public int UserId { get; set; }
+        public string FullName { get; set; } = string.Empty;
+         
+    }
     public class RoutingModel
     {
         public int RoleId { get; set; }
         public string FullName { get; set; } = string.Empty;
         public int UserId { get; set; }
+
+        public string RoleName { get; set; } = string.Empty;
+
     }
 
-  
+
     public class RoleModel
     {
         public int Id { get; set; }
@@ -61,6 +70,25 @@ namespace TodoApi.Models
         public string DepartmentName { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public int Responsible { get; set; }
+    }
+
+    public class Items
+    {
+        public int ItemId { get; set; }
+        public string ItemName { get; set; } = string.Empty;
+        public string Unit { get; set; } = string.Empty;
+    }
+
+    public class UnitByItemId
+    {
+        public int ItemId { get; set; }
+        public string Unit { get; set; } = string.Empty;
+    }
+
+    public class Suppliers
+    {
+        public int SupplierID { get; set; }
+        public string SupplierName { get; set; } = string.Empty;
     }
 }
 

@@ -1,3 +1,23 @@
+TODAY TASK
+Display the Endorser & Approver on the field
+passed the id instead of name
+field must have a data already
+Display the options for canvassed by from users table
+Displa the items from items table with auto display value on unit based on seleted item
+Display supplier from supllier tables 
+if supllier already selected do it will not re selected again as supplier 2 or 3
+it must be different.
+
+
+
+
+
+
+
+
+
+
+
 CASES & Conditions FOR ADDING ROW
  1st row it require: Item, Description, Qty, Suppliers(at least one)
  New row it require: item, Description, Qty 

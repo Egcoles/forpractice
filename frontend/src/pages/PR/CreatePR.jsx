@@ -1,4 +1,9 @@
 import React, { useState } from "react";
+import { useMutation, useQueryClient} from "@tanstack/react-query";
+import api from "../../api";
+import { useUsers, useItems, useSuppliers } from "../../hooks/useUsers";
+import {useEndorsers} from "../../hooks/useEndorsers";
+import { useApprovers } from "../../hooks/useApprovers";
 import {Box,Button,TextField,Typography,Autocomplete,Grid,Divider,Paper,Stack,Table,TableBody,TableCell,TableContainer,TableFooter,TableHead,TableRow,Tooltip,} from "@mui/material";
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
@@ -7,11 +12,15 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs'; 
+
 const CreatePR = () => {
+  const queryClient = useQueryClient();
   const [form, setForm] = useState ({
     date: dayjs(),
     canvassedBy: "",
     project: "",
+    endorser: "",
+    approver: "",
     supplier1: "",
     supplier2: "",
     supplier3: "",
@@ -30,9 +39,28 @@ const CreatePR = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState({});
 
+  const {data: users = [], isLoading, isError} = useUsers();
+  const selectedUser = users.find(u => u.userid === form.canvassedBy);
+
+  const {data: approvers = [], isAppLoading, isAppError} = useApprovers();
+  const selectedApprover = approvers.find(a => a.userid === form.approver);
+
+  const {data: endorsers = [], isEndoLoading, isEndoError} = useEndorsers();
+  const selectedEndorser = endorsers.find(e => e.userid === form.endorser);
+
+  const {data: particulars = [], isItemLoading, isItemError} = useItems();
+
+  const {data: suppliers =[], isSuppLoading, isSuppError} = useSuppliers();
+  const selectedSupplier1 = suppliers.find(s => s.supplierid === form.supplier1);
+  const selectedSupplier2 = suppliers.find(s => s.supplierid === form.supplier2);
+  const selectedSupplier3= suppliers.find(s => s.supplierid === form.supplier3);
+
+
+
   // Dynamic line items
   const initialItem = () => ({
-    item: '',
+    id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+    item: null,
     unit: '',
     qty: '',
     price1: '',
@@ -50,16 +78,17 @@ const CreatePR = () => {
   const [rowErrors, setRowErrors] = useState([{}]);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'warning' });
   const [hasDup, setHasDup] = useState(false); //duplicate detection across rows
+  const [canSubmit, setCanSubmit] = useState(false); // submit is enabled only after successful Preview
 
   const computeRowTotals = (row) => {
     const qty = parseFloat(row.qty) || 0;
-    const p1 = parseFloat(row.price1) || 0;
-    const p2 = parseFloat(row.price2) || 0;
-    const p3 = parseFloat(row.price3) || 0;
+    const p1 = parseFloat(row.price1);
+    const p2 = parseFloat(row.price2);
+    const p3 = parseFloat(row.price3);
     return {
-      supplier1Total: qty && p1 ? (qty * p1).toFixed(2) : '',
-      supplier2Total: qty && p2 ? (qty * p2).toFixed(2) : '',
-      supplier3Total: qty && p3 ? (qty * p3).toFixed(2) : '',
+      supplier1Total: qty > 0 && p1 > 0 ? (qty * p1).toFixed(2) : '',
+      supplier2Total: qty > 0 && p2 > 0 ? (qty * p2).toFixed(2) : '',
+      supplier3Total: qty > 0 && p3 > 0 ? (qty * p3).toFixed(2) : '',
     };
   };
 
@@ -80,9 +109,11 @@ const CreatePR = () => {
     setRowErrors((prev) => {
       const next = [...prev];
       if (["price1","price2","price3"].includes(field)) {
-        // If any price has value all price-related errors on this row will be clreared
-        if (value !== '' && value !== null && value !== undefined) {
-          next[index] = { ...next[index], price1: '', price2: '', price3: '' };
+        const num = parseFloat(value);
+        if (value === '' || value === null || value === undefined || isNaN(num)) {
+          next[index] = { ...next[index], [field]: '' };
+        } else if (num <= 0) {
+          next[index] = { ...next[index], [field]: 'Price must be greater than 0.' };
         } else {
           next[index] = { ...next[index], [field]: '' };
         }
@@ -91,13 +122,18 @@ const CreatePR = () => {
       }
       return next;
     });
+    setCanSubmit(false);
   };
 
   //function to handle Material UI Autocomplete Textfields
   const handleItemAutocompleteChange = (index, field, newValue) => {
     setItems((prev) => {
       const next = [...prev];
-      next[index] = { ...next[index], [field]: newValue || '' };
+      const updated = { ...next[index], [field]: newValue || '' };
+      if (field === 'item') {
+        updated.unit = newValue ? (newValue.unit ?? newValue.Unit ?? '') : '';
+      }
+      next[index] = updated;
       return next;
     });
     setRowErrors((prev) => {
@@ -105,6 +141,7 @@ const CreatePR = () => {
       next[index] = { ...next[index], [field]: '' };
       return next;
     });
+    setCanSubmit(false);
   };
 
   const openSnackbar = (message, severity = 'warning') => setSnackbar({ open: true, message, severity });
@@ -115,23 +152,32 @@ const CreatePR = () => {
     const errorMessage = 'Please input the required field.';
 
     // Required base fields
-    if (!row.item) re.item = errorMessage;
+    if (!row.item || !(row.item?.itemId ?? row.item?.ItemId)) re.item = errorMessage;
     if (!row.itemDescription) re.itemDescription = errorMessage;
     const q = parseFloat(row.qty);
     if (!q || q <= 0) re.qty = 'Qty must be greater than 0.';
 
-    // Supplier + price requirement: at least one selected supplier must have a price in this row
+    // Supplier + price requirement: at least one selected supplier must have a positive price in this row
     const sel1 = !!form.supplier1;
     const sel2 = !!form.supplier2;
     const sel3 = !!form.supplier3;
     const anySelected = sel1 || sel2 || sel3;
 
     if (anySelected) {
-      const hasAnyPrice = (sel1 && !!row.price1) || (sel2 && !!row.price2) || (sel3 && !!row.price3);
-      if (!hasAnyPrice) {
-        if (sel1 && !row.price1) re.price1 = errorMessage;
-        if (sel2 && !row.price2) re.price2 = errorMessage;
-        if (sel3 && !row.price3) re.price3 = errorMessage;
+      const v1 = parseFloat(row.price1);
+      const v2 = parseFloat(row.price2);
+      const v3 = parseFloat(row.price3);
+
+      const hasAnyPositive = (sel1 && v1 > 0) || (sel2 && v2 > 0) || (sel3 && v3 > 0);
+      if (!hasAnyPositive) {
+        if (sel1) re.price1 = row.price1 ? 'Price must be greater than 0.' : errorMessage;
+        if (sel2) re.price2 = row.price2 ? 'Price must be greater than 0.' : errorMessage;
+        if (sel3) re.price3 = row.price3 ? 'Price must be greater than 0.' : errorMessage;
+      } else {
+        // Explicitly flag zero or negative prices if entered
+        if (sel1 && row.price1 !== '' && !(v1 > 0)) re.price1 = 'Price must be greater than 0.';
+        if (sel2 && row.price2 !== '' && !(v2 > 0)) re.price2 = 'Price must be greater than 0.';
+        if (sel3 && row.price3 !== '' && !(v3 > 0)) re.price3 = 'Price must be greater than 0.';
       }
     }
 
@@ -147,19 +193,19 @@ const CreatePR = () => {
     let duplicateFound = false;
     for (let i = 0; i < items.length; i++) {
       const row = items[i];
-      const itemKey = (row.item || '').toString().trim().toLowerCase();
+      const itemKey = row.item?.itemId ?? row.item?.ItemId;
       if (!itemKey) continue;
       const sources = [
-        { sel: !!form.supplier1, price: row.price1, key: 's1', field: 'price1' },
-        { sel: !!form.supplier2, price: row.price2, key: 's2', field: 'price2' },
-        { sel: !!form.supplier3, price: row.price3, key: 's3', field: 'price3' },
+        { sel: !!form.supplier1, price: parseFloat(row.price1), key: 's1', field: 'price1' },
+        { sel: !!form.supplier2, price: parseFloat(row.price2), key: 's2', field: 'price2' },
+        { sel: !!form.supplier3, price: parseFloat(row.price3), key: 's3', field: 'price3' },
       ];
       sources.forEach((s) => {
-        if (s.sel && s.price) {
+        if (s.sel && s.price > 0) {
           const pair = `${itemKey}::${s.key}`;
           if (seen.has(pair)) {
             duplicateFound = true;
-            errs[i] = { ...errs[i], item: errs[i]?.item || 'Duplicate item and supplier.', [s.field]: errs[i]?.[s.field] || 'Duplicate combination.' };
+            errs[i] = { ...errs[i], item: errs[i]?.item || 'You are trying to input this item again.', [s.field]: errs[i]?.[s.field] || 'Please choose different supplier.' };
           } else {
             seen.add(pair);
           }
@@ -170,7 +216,7 @@ const CreatePR = () => {
     setRowErrors(errs);
     setHasDup(duplicateFound);
     if (duplicateFound) {
-      openSnackbar('You selected the same item and supplier please double check your entry.', 'warning');
+      openSnackbar('You are already input this item with the same supplier. Please double check your entry.', 'warning');
     }
 
     return !duplicateFound && errs.every((e) => Object.keys(e).length === 0);
@@ -197,7 +243,7 @@ const CreatePR = () => {
     valid = valid && rowsOk;
 
     if (!valid) {
-      if (!hasDup) openSnackbar('Complete required fields in existing rows before adding a new row.', 'warning');
+      if (!hasDup) openSnackbar('Please input all required fields before adding a new row.', 'warning');
       return false;
     }
     return true;
@@ -213,14 +259,14 @@ const CreatePR = () => {
       supplier3: !!form.supplier3,
     };
     newRow.isPrimary = false;
-    setItems((prev) => [newRow, ...prev]);
-    setRowErrors((prev) => [{} , ...prev]);
+    setItems((prev) => [...prev, newRow]);
+    setRowErrors((prev) => [...prev, {}]);
   };
 
   //function to remove row
   const removeItemRow = () => {
-    setItems((prev) => (prev.length > 1 ? prev.slice(1) : prev));
-    setRowErrors((prev) => (prev.length > 1 ? prev.slice(1) : prev));
+    setItems((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
+    setRowErrors((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
   };
 
   //function to sum the overall total per supplier
@@ -236,13 +282,13 @@ const CreatePR = () => {
   // Calculate totals based on qty and prices
   const computeTotals = (f) => {
     const qty = parseFloat(f.qty) || 0;
-    const price1 = parseFloat(f.price1) || 0;
-    const price2 = parseFloat(f.price2) || 0;
-    const price3 = parseFloat(f.price3) || 0;
+    const price1 = parseFloat(f.price1);
+    const price2 = parseFloat(f.price2);
+    const price3 = parseFloat(f.price3);
 
-    const t1 = qty * price1;
-    const t2 = qty * price2;
-    const t3 = qty * price3;
+    const t1 = qty > 0 && price1 > 0 ? qty * price1 : 0;
+    const t2 = qty > 0 && price2 > 0 ? qty * price2 : 0;
+    const t3 = qty > 0 && price3 > 0 ? qty * price3 : 0;
 
     return {
       supplier1Total: t1 ? t1.toFixed(2) : '',
@@ -270,6 +316,7 @@ const CreatePR = () => {
       const next = { ...prev, [name]: '' };
       return next;
     });
+    setCanSubmit(false);
   };
 
   // General Change handler for Autocomplete
@@ -306,6 +353,7 @@ const CreatePR = () => {
       }
       return next;
     });
+    setCanSubmit(false);
   };
 
   //function to validate inputs
@@ -334,8 +382,21 @@ const CreatePR = () => {
   }
 
 
+  // Preview flow: validate, show alert, log data, then enable Submit
+  const handlePreview = () => {
+    const a = validate();
+    const b = validateRows();
+    if (!a || !b) {
+      if (!hasDup) openSnackbar('Please input all required fields before preview.', 'warning');
+      setCanSubmit(false);
+      return;
+    }
+    alert('All data is valid. Check console for preview.');
+    console.log('Preview data:', { form, items });
+    setCanSubmit(true);
+  };
+
   //function to handle submission
-  //TODO: add validation for supplier and price fields
     const handleSubmit = async (e) => {
         e.preventDefault();
         const a = validate();
@@ -344,17 +405,14 @@ const CreatePR = () => {
           if (!hasDup) openSnackbar('Please input all required fields before submitting.', 'error');
           return;
         }
+        
+        if (form) {
+          const formData = new FormData();
+          alert(formData);
+        }
         console.log('Form submitted:', { form, items });
     };
 
-    //this is static data only
-    //REPLACE WITH DYNAMIC DATA SOON.....
-     const options = ['Apple', 'Banana', 'Cherry', 'Date'];
-
-    const Rows = [
-      { id: 1, name: 'John Doe', age: 30, city: 'New York' },
-      { id: 2, name: 'Jane Smith', age: 25, city: 'London' },
-    ];
 
   return (
     <Box sx={{
@@ -401,8 +459,9 @@ const CreatePR = () => {
         </Grid>
         <Grid size={6}>
          <Autocomplete
-            options={options}
-            value={form.canvassedBy}
+            options={users}
+            getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`}
+            value={selectedUser}
             onChange={handleAutocompleteChange('canvassedBy')}
             renderInput={(params) => (
               <TextField
@@ -446,6 +505,71 @@ const CreatePR = () => {
             onChange={handleChange}
           />
         </Grid>
+        <Grid size={6}>
+          <Autocomplete
+            options={endorsers}
+            getOptionLabel={(option) => option?.fullName || `Endorser ${option?.userId}`}
+            value={selectedEndorser}
+            onChange={handleAutocompleteChange('endorser')}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined" 
+                label="Select Endorser"
+                className="endorser"
+                name="endorser"
+                error={!!errors.endorser}
+                helperText={errors.endorser}
+                sx={{
+                  '& .MuiInput-root': {
+                    '& fieldset': {
+                      border: 'none', 
+                    },
+                    '&:hover fieldset': {
+                      border: 'none', 
+                    },
+                    '&.Mui-focused fieldset': {
+                      border: 'none',
+                    },
+                  },
+                }}
+              />
+            )}
+          />
+
+        </Grid>
+        <Grid size={6}>
+           <Autocomplete
+            options={approvers}
+            getOptionLabel={(option) => option?.fullName || `Approver ${option?.userId}`}
+            value={selectedApprover}
+            onChange={handleAutocompleteChange('approver')}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined" 
+                label="Select Approver"
+                className="approver"
+                name="approver"
+                error={!!errors.approver}
+                helperText={errors.approver}
+                sx={{
+                  '& .MuiInput-root': {
+                    '& fieldset': {
+                      border: 'none', 
+                    },
+                    '&:hover fieldset': {
+                      border: 'none', 
+                    },
+                    '&.Mui-focused fieldset': {
+                      border: 'none',
+                    },
+                  },
+                }}
+              />
+            )}
+          />
+        </Grid>
         
       </Grid>
       <Stack direction="row" spacing={2} mt={2} mb={2}> 
@@ -468,10 +592,12 @@ const CreatePR = () => {
               <TableCell align="center">Qty</TableCell>
               <TableCell>
                 <Autocomplete
-                options={options}
+               options={suppliers}
+                getOptionLabel={(option) => option?.supplierName || `Supplier ${option?.supplierid}`}
                 disablePortal={false}
-                ListboxProps={{ style: { maxHeight: 240, overflow: 'auto' } }}
-                value={form.supplier1}
+                slotProps={{listbox: { maxheight: 240, overflow: 'auto'},}}
+                // ListboxProps={{ style: { maxheight: 240, overflow: 'auto' } }}
+                value={selectedSupplier1}
                 onChange={handleAutocompleteChange('supplier1')}
                 renderInput={(params) => (
                   <TextField
@@ -501,10 +627,12 @@ const CreatePR = () => {
               </TableCell>
               <TableCell>
                 <Autocomplete
-                options={options}
+                options={suppliers}
+                getOptionLabel={(option) => option?.supplierName || `Supplier ${option?.supplierid}`}
                 disablePortal={false}
-                ListboxProps={{ style: { maxHeight: 240, overflow: 'auto' } }}
-                value={form.supplier2}
+                slotProps={{listbox: { maxheight: 240, overflow: 'auto'},}}
+                // ListboxProps={{ style: { maxheight: 240, overflow: 'auto' } }}
+                value={selectedSupplier2}
                 onChange={handleAutocompleteChange('supplier2')}
                 renderInput={(params) => (
                   <TextField
@@ -534,10 +662,12 @@ const CreatePR = () => {
               </TableCell>
               <TableCell>
                 <Autocomplete
-                options={options}
+                options={suppliers}
+                getOptionLabel={(option) => option?.supplierName || `Supplier ${option?.supplierid}`}
                 disablePortal={false}
-                ListboxProps={{ style: { maxHeight: 240, overflow: 'auto' } }}
-                value={form.supplier3}
+                slotProps={{listbox: { maxheight: 240, overflow: 'auto'},}}
+                // ListboxProps={{ style: { maxheight: 240, overflow: 'auto' } }}
+                value={selectedSupplier3}
                 onChange={handleAutocompleteChange('supplier3')}
                 renderInput={(params) => (
                   <TextField
@@ -569,15 +699,18 @@ const CreatePR = () => {
           </TableHead>
           <TableBody>
             {items.map((row, idx) => (
-              <React.Fragment key={idx}>
+              <React.Fragment key={row.id || idx}>
                 <TableRow>
                   <TableCell sx={{ minWidth: 320, width: '35%' }}>
                     <Autocomplete
                       fullWidth
-                      options={options}
+                      options={particulars}
+                      getOptionLabel={(option) => option?.itemName|| `Item ${option?.itemId}`}
                       disablePortal={false}
-                      ListboxProps={{ style: { maxHeight: 240, overflow: 'auto' } }}
+                      slotProps={{listbox: { maxheight: 240, overflow: 'auto'},}}
+                      // ListboxProps={{ style: { maxheight: 240, overflow: 'auto' } }}
                       value={row.item}
+                      isOptionEqualToValue={(o, v) => (o?.itemId ?? o?.ItemId) === (v?.itemId ?? v?.ItemId)}
                       onChange={(e, newValue) => handleItemAutocompleteChange(idx, 'item', newValue)}
                       renderInput={(params) => (
                         <TextField
@@ -643,7 +776,7 @@ const CreatePR = () => {
                         type="number" 
                         className="price1" 
                         name={`price1_${idx}`}
-                        slotProps={{input: { readOnly: !Boolean(form.supplier1) },}}
+                        slotProps={{input: { readOnly: !Boolean(form.supplier1) },min: 0.01, step: '0.01' }}
                         value={row.price1}
                         onChange={(e) => handleItemFieldChange(idx, 'price1', e.target.value)}
                         error={!!rowErrors[idx]?.price1}
@@ -665,7 +798,7 @@ const CreatePR = () => {
                         type="number"  
                         className="price2" 
                         name={`price2_${idx}`}
-                        slotProps={{input: { readOnly: !Boolean(form.supplier2) },}}
+                        slotProps={{input: { readOnly: !Boolean(form.supplier2) }, min: 0.01, step: '0.01'}}
                         value={row.price2}
                         onChange={(e) => handleItemFieldChange(idx, 'price2', e.target.value)}
                         error={!!rowErrors[idx]?.price2}
@@ -687,7 +820,7 @@ const CreatePR = () => {
                         type="number"  
                         className="price3" 
                         name={`price3_${idx}`}
-                        slotProps={{input: { readOnly: !Boolean(form.supplier3) },}}
+                        slotProps={{input: { readOnly: !Boolean(form.supplier3) }, min: 0.01, step: '0.01'}}
                         value={row.price3}
                         onChange={(e) => handleItemFieldChange(idx, 'price3', e.target.value)}
                         error={!!rowErrors[idx]?.price3}
@@ -773,13 +906,13 @@ const CreatePR = () => {
         </Table>
       </TableContainer>
 
-       <Stack direction="row" spacing={2} mt={2} mb={2}
+      <Stack direction="row" spacing={2} mt={2} mb={2}
        sx={{ display: 'flex', justifyContent: 'flex-end' }}
        > 
-        <Button variant="outlined" startIcon={<PreviewIcon/>}>
+        <Button variant="outlined" startIcon={<PreviewIcon/>} onClick={handlePreview}>
            Preview
         </Button>
-        <Button variant="contained" type="submit" endIcon={<SendIcon />}>
+        <Button variant="contained" type="submit" endIcon={<SendIcon />} disabled={!canSubmit}>
           Submit
         </Button>
       </Stack>
