@@ -13,7 +13,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs'; 
 
-const CreatePR = () => {
+const CreatePR = ({roleId}) => {
   const queryClient = useQueryClient();
   const [form, setForm] = useState ({
     date: dayjs(),
@@ -40,22 +40,55 @@ const CreatePR = () => {
   const [loading, setLoading] = useState({});
 
   const {data: users = [], isLoading, isError} = useUsers();
-  const selectedUser = users.find(u => u.userid === form.canvassedBy);
+  const selectedUser = form.canvassedBy || null;
 
   const {data: approvers = [], isAppLoading, isAppError} = useApprovers();
-  const selectedApprover = approvers.find(a => a.userid === form.approver);
+  const selectedApprover = form.approver || null;
 
   const {data: endorsers = [], isEndoLoading, isEndoError} = useEndorsers();
-  const selectedEndorser = endorsers.find(e => e.userid === form.endorser);
+  const selectedEndorser = form.endorser || null;
 
   const {data: particulars = [], isItemLoading, isItemError} = useItems();
 
   const {data: suppliers =[], isSuppLoading, isSuppError} = useSuppliers();
-  const selectedSupplier1 = suppliers.find(s => s.supplierid === form.supplier1);
-  const selectedSupplier2 = suppliers.find(s => s.supplierid === form.supplier2);
-  const selectedSupplier3= suppliers.find(s => s.supplierid === form.supplier3);
+  const selectedSupplier1 = form.supplier1 || null;
+  const selectedSupplier2 = form.supplier2 || null;
+  const selectedSupplier3= form.supplier3 || null;
 
-
+  const createPRMutation = useMutation ({
+    mutationFn:(newPR) => api.post("PR/create", newPR, {withCredentials: true}),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["PR"])
+      setSnackbar({ open: true, message: 'PR created successfully', severity: 'success' });
+      // Reset the entire form and dynamic rows
+      setForm({
+        date: dayjs(),
+        canvassedBy: "",
+        project: '',
+        endorser: "",
+        approver: "",
+        supplier1: "",
+        supplier2: "",
+        supplier3: "",
+        item: '',
+        unit: '',
+        qty: '',
+        price1: '',
+        price2: '',
+        price3: '',
+        itemDescription: '',
+        supplier1Total: '',
+        supplier2Total: '',
+        supplier3Total: ''
+      })
+      setItems([{ ...initialItem(), isPrimary: true }]);
+      setRowErrors([{}]);
+      setErrors({});
+      setCanSubmit(false);
+      }, onError: (err) => {
+      setSnackbar({ open: true, message: 'Error creating PR. Please try again.', severity: 'error' });
+    }
+  })
 
   // Dynamic line items
   const initialItem = () => ({
@@ -406,11 +439,55 @@ const CreatePR = () => {
           return;
         }
         
-        if (form) {
-          const formData = new FormData();
-          alert(formData);
-        }
-        console.log('Form submitted:', { form, items });
+        const toId = (obj, keys = ['userId','userid','UserId','supplierId','supplierid','SupplierId','itemId','ItemId']) => {
+          if (!obj) return null;
+          if (typeof obj !== 'object') return obj;
+          for (const k of keys) {
+            if (obj[k] !== undefined && obj[k] !== null) return obj[k];
+          }
+          return null;
+        };
+
+        const toNum = (x) => {
+          const n = Number(x);
+          return Number.isFinite(n) && n > 0 ? n : null;
+        };
+
+        const dateIso = form?.date && typeof form.date?.toISOString === 'function'
+          ? form.date.toISOString()
+          : null;
+
+        const main = items[0] || {};
+        const payload = {
+          ProjecDescription: form.project || '',
+          DateNeeded: dateIso,
+          CanvassedBy: toId(form.canvassedBy),
+          EndorserId: toId(form.endorser),
+          ApproverId: toId(form.approver),
+          EndorsedDate: null,
+          ApprovedDate: null,
+          Status: 'On-GOING',
+          Notification: 'VIEW',
+          FormStatus: 'Under Review',
+
+          ItemId: toId(main.item, ['itemId','ItemId']),
+          ItemDescription: main.itemDescription || '',
+          Qty: Number(main.qty) || 0,
+
+          Supplier1: toId(form.supplier1, ['supplierId','supplierid','SupplierId']),
+          Supplier2: toId(form.supplier2, ['supplierId','supplierid','SupplierId']),
+          Supplier3: toId(form.supplier3, ['supplierId','supplierid','SupplierId']),
+
+          Supplier1_PRICE: toNum(main.price1),
+          Supplier2_PRICE: toNum(main.price2),
+          Supplier3_PRICE: toNum(main.price3),
+
+          Supplier1_TOTAL: toNum(main.supplier1Total) ?? (toNum(main.price1) && Number(main.qty) ? Number(main.qty) * Number(main.price1) : null),
+          Supplier2_TOTAL: toNum(main.supplier2Total) ?? (toNum(main.price2) && Number(main.qty) ? Number(main.qty) * Number(main.price2) : null),
+          Supplier3_TOTAL: toNum(main.supplier3Total) ?? (toNum(main.price3) && Number(main.qty) ? Number(main.qty) * Number(main.price3) : null),
+        };
+
+        createPRMutation.mutate(payload);
     };
 
 
@@ -506,6 +583,7 @@ const CreatePR = () => {
           />
         </Grid>
         <Grid size={6}>
+           {roleId !== '32' && (
           <Autocomplete
             options={endorsers}
             getOptionLabel={(option) => option?.fullName || `Endorser ${option?.userId}`}
@@ -536,9 +614,11 @@ const CreatePR = () => {
               />
             )}
           />
+          )}
 
         </Grid>
         <Grid size={6}>
+          {roleId !== '33' && (
            <Autocomplete
             options={approvers}
             getOptionLabel={(option) => option?.fullName || `Approver ${option?.userId}`}
@@ -569,6 +649,7 @@ const CreatePR = () => {
               />
             )}
           />
+          )}
         </Grid>
         
       </Grid>

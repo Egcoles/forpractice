@@ -13,8 +13,8 @@ namespace TodoApi.Models
         public string FirstName { get; set; } = "";
         public string LastName { get; set; } = "";
         public string Position { get; set; } = string.Empty;
-        public int? DepartmentId { get; set; }
-        public int? RoleId { get; set; }
+        public int ? DepartmentId { get; set; }
+        public int ? RoleId { get; set; }
         public int EndorserId { get; set; } = 0;
         public int ApproverId { get; set; } = 0;
         public string UserStatus { get; set; } = "Active";

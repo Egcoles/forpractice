@@ -1,5 +1,5 @@
 import { Outlet, useNavigate } from "react-router-dom";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 
@@ -40,6 +40,9 @@ import {
   EditSquare as EditSquareIcon,
   Apartment as ApartmentIcon,
 } from "@mui/icons-material";
+import { useAuth } from "../hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
+import api from "../api";
 
 const drawerWidth = 240;
 const miniDrawerWidth = 72;
@@ -49,21 +52,35 @@ export default function DashboardLayout() {
   const [open, setOpen] = useState(true);
   const [anchorEl, setAnchorEl] = useState(null);
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
-  const username = "John Doe";
+  const queryClient = useQueryClient();
+  const { data, isLoading, isError, error } = useAuth();
+  const username = data?.username || "User";
 
   const isMenuOpen = Boolean(anchorEl);
   const handleToggleDrawer = () => setOpen(!open);
   const handleToggleMaintenance = () => setMaintenanceOpen(!maintenanceOpen);
   const handleMenuClick = (e) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
-  const handleLogout = () => {
+  const handleLogout = async () => {
     handleMenuClose();
+    try {
+      await api.post("/auth/logout");
+      await queryClient.removeQueries({ queryKey: ["auth"], exact: true });
+    } catch (e) {
+      // ignore logout errors
+    }
     navigate("/");
   };
 
   const location = useLocation();
 
   const pathnames = location.pathname.split("/").filter((x) => x);
+
+  useEffect(() => {
+    if (isError) {
+      navigate("/");
+    }
+  }, [isError, navigate]);
 
   const breadcrumbNameMap = {
     dashboard: "Dashboard",
@@ -126,7 +143,7 @@ export default function DashboardLayout() {
             >
               <AccountCircleIcon sx={{ mr: 1 }} fontSize="small" />
               <Typography variant="body2" fontWeight={500}>
-                {username}
+                {isLoading ? "Loading..." : username}
               </Typography>
               <ExpandMore fontSize="small" />
             </Box>

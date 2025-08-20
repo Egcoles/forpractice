@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../api";
 
 import {
@@ -24,12 +24,15 @@ const Login = () => {
   const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // React Query Mutation
   const mutation = useMutation({
     mutationFn: loginUser,
     onSuccess: (data) => {
       if (data.message === "Login successful") {
+        // Clear any cached auth user so the next screen refetches the new user
+        queryClient.removeQueries({ queryKey: ["auth"], exact: true });
         navigate("/dashboard"); // Redirect immediately after login
       } else {
         setError(data.message || "Invalid credentials");

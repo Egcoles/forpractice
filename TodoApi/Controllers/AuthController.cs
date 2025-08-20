@@ -47,7 +47,7 @@ public class AuthController(IConfiguration config, IAuthRepository authRepo) : C
 
         if (!VerifyPassword(user.Password!, foundUser.Password!))
             return Unauthorized(new { error = "Invalid password" });
-        Console.WriteLine($"[LOGIN] UserID: {foundUser.UserId}, Username: {foundUser.Username}");
+        Console.WriteLine($"[LOGIN] UserID: {foundUser.UserId}, Username: {foundUser.Username}, RoleID: {foundUser.RoleId}");
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(_config["Jwt:Key"]!);
 
