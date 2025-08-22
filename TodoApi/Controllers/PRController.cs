@@ -43,10 +43,10 @@ namespace TodoApi.Controllers
                     return Unauthorized(new { message = "Unable to determine the current user id from the token." });
                 }
 
-                // Apply auditing fields
-                model.CreatedBy = userId;
-                if (!model.UpdatedBy.HasValue) model.UpdatedBy = userId;
+                 // Set the CreatedBy property
+                  model.CreatedBy = userId;
 
+               
                 await _prRepository.InsertAsync(model);
                 return CreatedAtAction(nameof(GetAllPRs), new { id = model.PRId }, model);
             }

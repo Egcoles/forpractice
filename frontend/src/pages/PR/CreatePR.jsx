@@ -25,7 +25,6 @@ const CreatePR = ({roleId}) => {
     supplier2: "",
     supplier3: "",
     item: "",
-    unit: "",
     qty: "",
     price1: "",
     price2: "",
@@ -54,6 +53,7 @@ const CreatePR = ({roleId}) => {
   const selectedSupplier1 = form.supplier1 || null;
   const selectedSupplier2 = form.supplier2 || null;
   const selectedSupplier3= form.supplier3 || null;
+  
 
   const createPRMutation = useMutation ({
     mutationFn:(newPR) => api.post("PR/create", newPR, {withCredentials: true}),
@@ -429,66 +429,71 @@ const CreatePR = ({roleId}) => {
     setCanSubmit(true);
   };
 
-  //function to handle submission
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const a = validate();
-        const b = validateRows();
-        if (!a || !b) {
+  //function to submit
+  const handleSubmit = async (e) => {
+      e.preventDefault();
+      const a = validate();
+      const b = validateRows();
+      if (!a || !b) {
           if (!hasDup) openSnackbar('Please input all required fields before submitting.', 'error');
           return;
-        }
-        
-        const toId = (obj, keys = ['userId','userid','UserId','supplierId','supplierid','SupplierId','itemId','ItemId']) => {
+      }
+      
+      const toId = (obj, keys = ['userId','userid','UserId','supplierId','supplierid','SupplierId','itemId','ItemId']) => {
           if (!obj) return null;
           if (typeof obj !== 'object') return obj;
           for (const k of keys) {
-            if (obj[k] !== undefined && obj[k] !== null) return obj[k];
+              if (obj[k] !== undefined && obj[k] !== null) return obj[k];
           }
           return null;
-        };
+      };
 
-        const toNum = (x) => {
+      const toNum = (x) => {
           const n = Number(x);
           return Number.isFinite(n) && n > 0 ? n : null;
-        };
+      };
 
-        const dateIso = form?.date && typeof form.date?.toISOString === 'function'
+      const dateIso = form?.date && typeof form.date?.toISOString === 'function'
           ? form.date.toISOString()
           : null;
-
-        const main = items[0] || {};
-        const payload = {
+      const itemsPayload = items.map(item => ({
+          ItemId: toId(item.item),
+          ItemDescription: item.itemDescription || '',
+          Qty: Number(item.qty) || 0,
+      }));
+      const main = items[0] || {};
+      const payload = {
           ProjecDescription: form.project || '',
           DateNeeded: dateIso,
           CanvassedBy: toId(form.canvassedBy),
           EndorserId: toId(form.endorser),
           ApproverId: toId(form.approver),
-          EndorsedDate: null,
-          ApprovedDate: null,
           Status: 'On-GOING',
           Notification: 'VIEW',
           FormStatus: 'Under Review',
+          items: itemsPayload,
+          suppliers: [
+              {
+                  SupplierId: form.supplier1?.supplierID,
+                  Price: toNum(main.price1) || 0,
+                  Total: toNum(main.supplier1Total) || 0,
+              },
+              {
+                  SupplierId: form.supplier2?.supplierID,
+                  Price: toNum(main.price2) || 0,
+                  Total: toNum(main.supplier2Total) || 0,
+              },
+              {
+                  SupplierId: form.supplier3?.supplierID,
+                  Price: toNum(main.price3) || 0,
+                  Total: toNum(main.supplier3Total) || 0,
+              },
+          ]
+      };
 
-          ItemId: toId(main.item, ['itemId','ItemId']),
-          ItemDescription: main.itemDescription || '',
-          Qty: Number(main.qty) || 0,
-
-          Supplier1: toId(form.supplier1, ['supplierId','supplierid','SupplierId']),
-          Supplier2: toId(form.supplier2, ['supplierId','supplierid','SupplierId']),
-          Supplier3: toId(form.supplier3, ['supplierId','supplierid','SupplierId']),
-
-          Supplier1_PRICE: toNum(main.price1),
-          Supplier2_PRICE: toNum(main.price2),
-          Supplier3_PRICE: toNum(main.price3),
-
-          Supplier1_TOTAL: toNum(main.supplier1Total) ?? (toNum(main.price1) && Number(main.qty) ? Number(main.qty) * Number(main.price1) : null),
-          Supplier2_TOTAL: toNum(main.supplier2Total) ?? (toNum(main.price2) && Number(main.qty) ? Number(main.qty) * Number(main.price2) : null),
-          Supplier3_TOTAL: toNum(main.supplier3Total) ?? (toNum(main.price3) && Number(main.qty) ? Number(main.qty) * Number(main.price3) : null),
-        };
-
-        createPRMutation.mutate(payload);
-    };
+      console.log(payload); // Corrected capitalization
+      createPRMutation.mutate(payload);
+  };
 
 
   return (

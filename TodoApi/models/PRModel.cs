@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 namespace TodoApi.Models
 {
-        public class PRModel
-    {   
+    public class PRModel
+    {
         public int? UserId { get; set; }
         public int PRId { get; set; }
         public string? PRNumber { get; set; }
@@ -12,32 +12,32 @@ namespace TodoApi.Models
         public int CanvassedBy { get; set; }
         public int EndorserId { get; set; }
         public int? ApproverId { get; set; }
-        public int? RejectedBy { get; set; }
-        public DateTime? EndorsedDate { get; set; }
-        public DateTime? ApprovedDate { get; set; }
-        public DateTime? RejectedDate { get; set; }
-        public string? RejectRemarks { get; set; }
         public string Status { get; set; } = "On-GOING";
         public DateTime EntryDate { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdateDAte { get; set; } = DateTime.UtcNow;
         public int CreatedBy { get; set; }
-        public int? UpdatedBy { get; set; }
         public string Notification { get; set; } = "VIEW";
         public string FormStatus { get; set; } = "FOR ENDORSEMENT";
+
+        public List<ItemModel>? Items { get; set; } = [];
+         public List<PRSupplier>? Suppliers { get; set; } = [];
+    }
+    
+    public class ItemModel
+    {   
+        public int PRId { get; set; } // Foreign key to PRModel
         public int ItemId { get; set; }
         public string ItemDescription { get; set; } = string.Empty;
         public int Qty { get; set; }
-        public int? Supplier1 { get; set; }
-        public int? Supplier2 { get; set; }
-        public int? Supplier3 { get; set; }
-        public decimal? Supplier1_PRICE { get; set; }
-        public decimal? Supplier2_PRICE { get; set; }
-        public decimal? Supplier3_PRICE { get; set; }
-        public decimal? Supplier1_TOTAL { get; set; }
-        public decimal? Supplier2_TOTAL { get; set; }
-        public decimal? Supplier3_TOTAL { get; set; }
+    }
 
-        
+    public class PRSupplier
+    {
+        public int Id { get; set; }
+        public int PRId { get; set; }
+        public int ItemId { get; set; }
+        public int? SupplierId { get; set; }
+        public decimal? Price { get; set; }
+        public decimal? Total { get; set; }
     }
 
     public class PRGRID
@@ -55,15 +55,9 @@ namespace TodoApi.Models
         public int ItemId { get; set; }
         public string ItemDescription { get; set; } = string.Empty;
         public int Qty { get; set; }
-        public int Supplier1 { get; set; }
-        public int Supplier2 { get; set; }
-        public int Supplier3 { get; set; }
-        public int Supplier1_PRICE { get; set; }
-        public int Supplier2_PRICE { get; set; }
-        public int Supplier3_PRICE { get; set; }
-        public int Supplier1_TOTAL { get; set; }
-        public int Supplier2_TOTAL { get; set; }
-        public int Supplier3_TOTAL { get; set; }
+        public int? Supplier { get; set; }
+        public decimal? PRICE { get; set; }
+        public decimal? TOTAL { get; set; }
 
         // Formatted date property
         public string FormattedEntryDate => EntryDate.ToUniversalTime().ToString("MM/dd/yy");

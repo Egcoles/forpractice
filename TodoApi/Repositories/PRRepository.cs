@@ -3,6 +3,7 @@ using System.Data;
 using TodoApi.Models;
 using TodoApi.Repositories.Interfaces;
 using TodoApi.Data;
+using System.Transactions;
 
 namespace TodoApi.Repositories {
     public class PRRepository(DapperContextUsers context) : IPRRepository
@@ -10,11 +11,15 @@ namespace TodoApi.Repositories {
         private readonly DapperContextUsers _context = context;
 
         //insert
-        public async Task InsertAsync(PRModel model)
+       public async Task InsertAsync(PRModel model)
         {
             var query = "sp_insert_PurchaseRequisition";
             using var connection = _context.CreateConnection();
-            await connection.ExecuteAsync(
+
+            // Use TransactionScope for async transactions
+            using var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+            // Perform the PR insertion
+            var prId = await connection.ExecuteScalarAsync<int>(
                 query,
                 new
                 {
@@ -23,28 +28,62 @@ namespace TodoApi.Repositories {
                     model.CanvassedBy,
                     model.EndorserId,
                     model.ApproverId,
-                    model.EndorsedDate,
-                    model.ApprovedDate,
                     model.Status,
                     model.EntryDate,
                     model.CreatedBy,
                     model.Notification,
                     model.FormStatus,
-                    model.ItemId,
-                    model.ItemDescription,
-                    model.Qty,
-                    model.Supplier1,
-                    model.Supplier2,
-                    model.Supplier3,
-                    model.Supplier1_PRICE,
-                    model.Supplier2_PRICE,
-                    model.Supplier3_PRICE,
-                    model.Supplier1_TOTAL,
-                    model.Supplier2_TOTAL,
-                    model.Supplier3_TOTAL
                 },
                 commandType: CommandType.StoredProcedure
             );
+
+            if (model?.Items != null)
+            {
+                // Insert Items
+                foreach (var item in model.Items)
+                {
+                    item.PRId = prId; // Set the foreign key
+                    var itemQuery = "sp_insertPRGRID";
+                    await connection.ExecuteAsync(
+                        itemQuery,
+                        new
+                        {
+                            item.PRId,
+                            item.ItemId,
+                            item.ItemDescription,
+                            item.Qty,
+                        },
+                        commandType: CommandType.StoredProcedure
+                    );
+
+
+                }
+                if (model?.Suppliers != null)
+                    {
+                        foreach (var supplier in model.Suppliers)
+                        {
+                            supplier.PRId = prId; // Set the foreign key
+                            var supplierQuery = "sp_insertPRSupplier";
+                            await connection.ExecuteAsync(
+                                supplierQuery,
+                                new
+                                {
+                                    supplier.PRId,
+                                    supplier.ItemId,
+                                    supplier.SupplierId,
+                                    supplier.Price,
+                                    supplier.Total
+                                },
+                                commandType: CommandType.StoredProcedure
+                            );
+                        }
+                    }
+            }
+
+            Console.WriteLine($"PR inserted with ID: {prId}");
+       
+            // Complete the transaction
+            transaction.Complete();
         }
 
         //get all
