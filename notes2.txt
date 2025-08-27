@@ -1,0 +1,63 @@
+
+Use React PDf for Preview and Reports.
+============================================
+1.Preview slider for pdf viewer
+2. Multiple Supplier selection
+3. If Change access how does it need reload
+
+
+Preview data: 
+date
+prno.
+project description
+item 
+description,
+qty,
+unit,
+suplier
+price
+total
++===========================================+
+TODO:: ADD Button to Add Supplier
+-table will be responsive : have a horizontal scroll
+
+DECLARE @PRId INT = 35;
+
+;WITH UniqueSuppliers AS (
+    SELECT 
+        a.PR_ID,
+        a.PR_REFERENCENO,
+        a.PR_PROJECTDESC,
+        b.ITEMID,
+        b.ITEM_DESCRIPTION,
+        b.QTY,
+        c.SupplierID,
+        c.Price,
+        c.Total,
+        ROW_NUMBER() OVER(PARTITION BY a.PR_ID, b.ITEMID ORDER BY c.Price) as RowNum
+    FROM 
+        [PRO_USER].[dbo].[PURCHASE_REQUISITION] a
+    LEFT JOIN 
+        [PRO_USER].[dbo].[PR_GRID] b ON a.PR_ID = b.PRID
+    LEFT JOIN 
+        [PRO_USER].[dbo].[PR_SUPPLIERS] c ON b.PRGRID_Id = c.PRGRID_Id
+    WHERE 
+        a.PR_ID = @PRId 
+        AND c.SupplierID IS NOT NULL
+)
+SELECT 
+    PR_ID,
+    PR_REFERENCENO,
+    PR_PROJECTDESC,
+    ITEMID,
+    ITEM_DESCRIPTION,
+    QTY,
+    SupplierID,
+    Price,
+    Total
+FROM 
+    UniqueSuppliers
+WHERE 
+    RowNum = 1  -- Selects first occurrence, effectively removing duplicates
+ORDER BY 
+    PR_ID DESC; 

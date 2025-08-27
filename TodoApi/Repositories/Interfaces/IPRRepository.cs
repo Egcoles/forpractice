@@ -8,7 +8,8 @@ namespace TodoApi.Repositories.Interfaces
         Task InsertAsync(PRModel model);
         Task<IEnumerable<PRModel>> GetAllPRsAsync();
         Task<IEnumerable<PRGRID>> GetPRTableDisplay();
-        Task<IEnumerable<PRModel>> GetPRDetailsByPRNumber( string PRNumber);
+        Task<IEnumerable<PRModel>> GetPRDetailsByPRNumber(string PRNumber);
+        Task<PRDetails?> GetPRDetailsById(int PRId);
     }
 
 }

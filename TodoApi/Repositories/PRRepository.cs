@@ -11,14 +11,13 @@ namespace TodoApi.Repositories {
         private readonly DapperContextUsers _context = context;
 
         //insert
-       public async Task InsertAsync(PRModel model)
+        public async Task InsertAsync(PRModel model)
         {
             var query = "sp_insert_PurchaseRequisition";
             using var connection = _context.CreateConnection();
 
-            // Use TransactionScope for async transactions
             using var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-            // Perform the PR insertion
+
             var prId = await connection.ExecuteScalarAsync<int>(
                 query,
                 new
@@ -39,12 +38,11 @@ namespace TodoApi.Repositories {
 
             if (model?.Items != null)
             {
-                // Insert Items
                 foreach (var item in model.Items)
                 {
-                    item.PRId = prId; // Set the foreign key
+                    item.PRId = prId;
                     var itemQuery = "sp_insertPRGRID";
-                    await connection.ExecuteAsync(
+                    var prGridId = await connection.ExecuteScalarAsync<int>(
                         itemQuery,
                         new
                         {
@@ -56,21 +54,18 @@ namespace TodoApi.Repositories {
                         commandType: CommandType.StoredProcedure
                     );
 
-
-                }
-                if (model?.Suppliers != null)
+                    if (item.Suppliers != null)
                     {
-                        foreach (var supplier in model.Suppliers)
+                        foreach (var supplier in item.Suppliers)
                         {
-                            supplier.PRId = prId; // Set the foreign key
+                            supplier.PRGRID_Id = prGridId; 
                             var supplierQuery = "sp_insertPRSupplier";
                             await connection.ExecuteAsync(
                                 supplierQuery,
                                 new
                                 {
-                                    supplier.PRId,
-                                    supplier.ItemId,
                                     supplier.SupplierId,
+                                    supplier.PRGRID_Id,
                                     supplier.Price,
                                     supplier.Total
                                 },
@@ -78,13 +73,13 @@ namespace TodoApi.Repositories {
                             );
                         }
                     }
+                }
             }
 
             Console.WriteLine($"PR inserted with ID: {prId}");
-       
-            // Complete the transaction
             transaction.Complete();
         }
+
 
         //get all
         public async Task<IEnumerable<PRModel>> GetAllPRsAsync()
@@ -105,7 +100,7 @@ namespace TodoApi.Repositories {
             );
         }
 
-        public async Task<IEnumerable<PRModel>> GetPRDetailsByPRNumber( string PRNumber)
+        public async Task<IEnumerable<PRModel>> GetPRDetailsByPRNumber(string PRNumber)
         {
             var query = "sp_GetPRDetailsByPRNumber";
             using var connection = _context.CreateConnection();
@@ -115,5 +110,41 @@ namespace TodoApi.Repositories {
                 commandType: CommandType.StoredProcedure
             );
         }
+
+        public async Task<PRDetails?> GetPRDetailsById(int PRId)
+        {
+            var query = "sp_GETPRBYID";
+            var prDetailsDict = new Dictionary<int, PRDetails>();
+
+            using var connection = _context.CreateConnection();
+            var result = await connection.QueryAsync<PRDetails, Item, PRDetails>(
+                query,
+                (prDetails, item) =>
+                {
+                    if (!prDetailsDict.TryGetValue(prDetails.PRId, out var pr))
+                    {
+                        pr = prDetails;
+                        pr.Items = new List<Item>();
+                        prDetailsDict.Add(pr.PRId, pr);
+                    }
+                    
+                    if (item != null)
+                    {
+                        pr.Items.Add(item);
+                    }
+                    
+                    return pr;
+                },
+                new { PRId },
+                commandType: CommandType.StoredProcedure,
+                splitOn: "ItemID"
+            );
+
+            return prDetailsDict.Values.FirstOrDefault();
+        }
+
+
+
+        
     }
 }

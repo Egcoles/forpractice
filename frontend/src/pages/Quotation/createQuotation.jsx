@@ -13,7 +13,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs'; 
 
-const CreatePR = ({roleId}) => {
+const CreateQuotation = ({roleId}) => {
   const queryClient = useQueryClient();
   const [form, setForm] = useState ({
     date: dayjs(),
@@ -501,59 +501,54 @@ const CreatePR = ({roleId}) => {
        width: '100%',
        }}>
       <Typography variant="h5" component="h5" fontWeight="bold">
-        Purchase Requisition
+        Quotation
       </Typography>
       <Divider sx={{ my: 2, borderColor: 'primary.main' }} />
     <form onSubmit={handleSubmit} noValidate>
       <Grid container alignItems="center" justifyContent="center" spacing={2}>
         <Grid size={6}>
-           <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker
-                label="Select Date"
-                name = "date"
-                className="date"
-                error={!!errors.date}
-                helperText={errors.date}
-                value={form.date}
-                  onChange={(newValue) => {
-                        setForm((prev) => ({ ...prev, date: newValue }));
-                        setErrors((prev) => ({ ...prev, date: "" })); 
-                    }}
-                    renderInput={(params) => (
-                        <TextField {...params} error={!!errors.date} helperText={errors.date} />
-                    )}
-                slotProps={{
-                  textField: {
-                    variant: 'outlined',
-                    fullWidth: true,
-                    sx: {
-                      '& .MuiInput-underline:before': { 
-                        borderBottom: 'none',
-                      },
-                      '& .MuiInput-underline:after': { 
-                        borderBottom: 'none',
-                      },
-                    },
-                  },
-                }}
-              />
-        </LocalizationProvider>
+            <TextField
+            className="clientName"
+            name="clientName"
+            label="Client Name"
+            multiline
+            fullWidth 
+            variant="outlined"
+            error={!!errors.clientName}
+            helperText={errors.clientName}
+            value={form.clientName}
+            onChange={handleChange}
+          />
         </Grid>
-        <Grid size={6}>
+         <Grid size={6}>
+            <TextField
+            className="ProjectName"
+            name="ProjectName"
+            label="Project Name"
+            multiline
+            fullWidth 
+            variant="outlined"
+            error={!!errors.ProjectName}
+            helperText={errors.ProjectName}
+            value={form.clientName}
+            onChange={handleChange}
+          />
+        </Grid>
+        <Grid size={4}>
          <Autocomplete
             options={users}
             getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`}
             value={selectedUser}
-            onChange={handleAutocompleteChange('canvassedBy')}
+            onChange={handleAutocompleteChange('companyName')}
             renderInput={(params) => (
               <TextField
                 {...params}
                 variant="outlined" 
-                label="Canvassed By"
-                className="canvassedBy"
-                name="canvassedBy"
-                error={!!errors.canvassedBy}
-                helperText={errors.canvassedBy}
+                label="Comapany Name"
+                className="companyName"
+                name="companyName"
+                error={!!errors.companyName}
+                helperText={errors.companyName}
                 sx={{
                   '& .MuiInput-root': {
                     '& fieldset': {
@@ -571,38 +566,139 @@ const CreatePR = ({roleId}) => {
             )}
           />
         </Grid>
+         <Grid size={4}>
+         <Autocomplete
+            options={users}
+            getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`}
+            value={selectedUser}
+            onChange={handleAutocompleteChange('location')}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined" 
+                label="Location"
+                className="location"
+                name="location"
+                error={!!errors.location}
+                helperText={errors.location}
+                sx={{
+                  '& .MuiInput-root': {
+                    '& fieldset': {
+                      border: 'none', 
+                    },
+                    '&:hover fieldset': {
+                      border: 'none', 
+                    },
+                    '&.Mui-focused fieldset': {
+                      border: 'none',
+                    },
+                  },
+                }}
+              />
+            )}
+          />
+        </Grid>
+            <Grid size={4}>
+            <TextField
+            className="CompanyAddress"
+            name="CompanyAddress"
+            label="Company Address"
+            multiline
+            fullWidth 
+            variant="outlined"
+            error={!!errors.CompanyAddress}
+            helperText={errors.CompanyAddress}
+            value={form.project}
+            onChange={handleChange}
+          />
+        </Grid>
         <Grid size={12}>
             <TextField
-            className="project"
-            name="project"
-            label="Project Description"
+            className="Terms"
+            name="Terms"
+            label="Terms & Condition"
+            value ="1.Price is in Philippine Peso and VAT INCLUSIVE 
+            2.Delivery: 
+            3.Payment: 
+            4.Warranty: 
+            5.Price Validity:"
+            textAlign = 'right'
             multiline
             fullWidth 
             minRows={4} 
             maxRows={10}
             variant="outlined"
-            error={!!errors.project}
-            helperText={errors.project}
+            error={!!errors.Terms}
+            helperText={errors.Terms}
+            onChange={handleChange}
+            slotProps={{
+                 style: { textAlign: 'right' }, 
+            }}
+          />
+        </Grid>
+        <Grid size={6}>
+         <Autocomplete
+            options={users}
+            getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`}
+            value={selectedUser}
+            onChange={handleAutocompleteChange('vat')}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined" 
+                label="VAT"
+                className="vat"
+                name="vat"
+                error={!!errors.vat}
+                helperText={errors.vat}
+                sx={{
+                  '& .MuiInput-root': {
+                    '& fieldset': {
+                      border: 'none', 
+                    },
+                    '&:hover fieldset': {
+                      border: 'none', 
+                    },
+                    '&.Mui-focused fieldset': {
+                      border: 'none',
+                    },
+                  },
+                }}
+              />
+            )}
+          />
+        </Grid>
+          <Grid size={6}>
+            <TextField
+            className="discount"
+            name="discount"
+            label="Discount"
+            multiline
+            fullWidth 
+            variant="outlined"
+            error={!!errors.discount}
+            helperText={errors.discount}
             value={form.project}
             onChange={handleChange}
           />
         </Grid>
-        <Grid size={6}>
+   
+        <Grid size={4}>
            {roleId !== '32' && (
           <Autocomplete
             options={endorsers}
             getOptionLabel={(option) => option?.fullName || `Endorser ${option?.userId}`}
             value={selectedEndorser}
-            onChange={handleAutocompleteChange('endorser')}
+            onChange={handleAutocompleteChange('submittedBy')}
             renderInput={(params) => (
               <TextField
                 {...params}
                 variant="outlined" 
-                label="Select Endorser"
-                className="endorser"
-                name="endorser"
-                error={!!errors.endorser}
-                helperText={errors.endorser}
+                label="Submitted By"
+                className="submittedBy"
+                name="submittedBy"
+                error={!!errors.submittedBy}
+                helperText={errors.submittedBy}
                 sx={{
                   '& .MuiInput-root': {
                     '& fieldset': {
@@ -622,7 +718,41 @@ const CreatePR = ({roleId}) => {
           )}
 
         </Grid>
-        <Grid size={6}>
+        <Grid size={4}>
+          {roleId !== '33' && (
+           <Autocomplete
+            options={approvers}
+            getOptionLabel={(option) => option?.fullName || `Approver ${option?.userId}`}
+            value={selectedApprover}
+            onChange={handleAutocompleteChange('approver')}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined" 
+                label="Select Approver"
+                className="approver"
+                name="approver"
+                error={!!errors.approver}
+                helperText={errors.approver}
+                sx={{
+                  '& .MuiInput-root': {
+                    '& fieldset': {
+                      border: 'none', 
+                    },
+                    '&:hover fieldset': {
+                      border: 'none', 
+                    },
+                    '&.Mui-focused fieldset': {
+                      border: 'none',
+                    },
+                  },
+                }}
+              />
+            )}
+          />
+          )}
+        </Grid>
+             <Grid size={4}>
           {roleId !== '33' && (
            <Autocomplete
             options={approvers}
@@ -676,111 +806,9 @@ const CreatePR = ({roleId}) => {
               <TableCell align="center">Particular </TableCell>
               <TableCell align="center">Unit</TableCell>
               <TableCell align="center">Qty</TableCell>
-              <TableCell>
-                <Autocomplete
-               options={suppliers}
-                getOptionLabel={(option) => option?.supplierName || `Supplier ${option?.supplierid}`}
-                disablePortal={false}
-                slotProps={{listbox: { maxheight: 240, overflow: 'auto'},}}
-                // ListboxProps={{ style: { maxheight: 240, overflow: 'auto' } }}
-                value={selectedSupplier1}
-                onChange={handleAutocompleteChange('supplier1')}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    variant="outlined" 
-                    label="Supplier 1"
-                    className="supplier1"
-                    name="supplier1"
-                    error={!!errors.supplier1}
-                    helperText={errors.supplier1}
-                    sx={{
-                      '& .MuiInput-root': {
-                        '& fieldset': {
-                          border: 'none', 
-                        },
-                        '&:hover fieldset': {
-                          border: 'none', 
-                        },
-                        '&.Mui-focused fieldset': {
-                          border: 'none',
-                        },
-                      },
-                    }}
-                  />
-                )}
-              />
-              </TableCell>
-              <TableCell>
-                <Autocomplete
-                options={suppliers}
-                getOptionLabel={(option) => option?.supplierName || `Supplier ${option?.supplierid}`}
-                disablePortal={false}
-                slotProps={{listbox: { maxheight: 240, overflow: 'auto'},}}
-                // ListboxProps={{ style: { maxheight: 240, overflow: 'auto' } }}
-                value={selectedSupplier2}
-                onChange={handleAutocompleteChange('supplier2')}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    variant="outlined" 
-                    label="Supplier 2"
-                    className="supplier2"
-                    name="supplier2"
-                    error={!!errors.supplier2}
-                    helperText={errors.supplier2}
-                    sx={{
-                      '& .MuiInput-root': {
-                        '& fieldset': {
-                          border: 'none', 
-                        },
-                        '&:hover fieldset': {
-                          border: 'none', 
-                        },
-                        '&.Mui-focused fieldset': {
-                          border: 'none',
-                        },
-                      },
-                    }}
-                  />
-                )}
-              />
-              </TableCell>
-              <TableCell>
-                <Autocomplete
-                options={suppliers}
-                getOptionLabel={(option) => option?.supplierName || `Supplier ${option?.supplierid}`}
-                disablePortal={false}
-                slotProps={{listbox: { maxheight: 240, overflow: 'auto'},}}
-                // ListboxProps={{ style: { maxheight: 240, overflow: 'auto' } }}
-                value={selectedSupplier3}
-                onChange={handleAutocompleteChange('supplier3')}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    variant="outlined" 
-                    label="Supplier 3"
-                    className="supplier3"
-                    name="supplier3"
-                    error={!!errors.supplier3}
-                    helperText={errors.supplier3}
-                    sx={{
-                      '& .MuiInput-root': {
-                        '& fieldset': {
-                          border: 'none', 
-                        },
-                        '&:hover fieldset': {
-                          border: 'none', 
-                        },
-                        '&.Mui-focused fieldset': {
-                          border: 'none',
-                        },
-                      },
-                    }}
-                  />
-                )}
-              />
-              </TableCell>
+              <TableCell align="center">Unit Cost</TableCell>
+              <TableCell align="center">Markup(%)</TableCell>
+              <TableCell align="center">Total Cost</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -794,7 +822,6 @@ const CreatePR = ({roleId}) => {
                       getOptionLabel={(option) => option?.itemName|| `Item ${option?.itemId}`}
                       disablePortal={false}
                       slotProps={{listbox: { maxheight: 240, overflow: 'auto'},}}
-                      // ListboxProps={{ style: { maxheight: 240, overflow: 'auto' } }}
                       value={row.item}
                       isOptionEqualToValue={(o, v) => (o?.itemId ?? o?.ItemId) === (v?.itemId ?? v?.ItemId)}
                       onChange={(e, newValue) => handleItemAutocompleteChange(idx, 'item', newValue)}
@@ -931,34 +958,10 @@ const CreatePR = ({roleId}) => {
                     />
                   </TableCell>
                   <TableCell></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
                   <TableCell>
-                    <Typography> Total Amount:</Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="This field is read-only" arrow>
-                      <TextField 
-                        slotProps={{input: { readOnly: true },}} 
-                        variant="standard" 
-                        type="number" 
-                        className="supplier1Total" 
-                        name={`supplier1Total_${idx}`} 
-                        value={row.supplier1Total}
-                        sx={{ '& input': { textAlign: 'right' } }}
-                      />
-                    </Tooltip>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="This field is read-only" arrow>
-                      <TextField  
-                        slotProps={{input: { readOnly: true },}} 
-                        variant="standard" 
-                        type="number" 
-                        className="supplier2Total" 
-                        name={`supplier2Total_${idx}`} 
-                        value={row.supplier2Total}
-                        sx={{ '& input': { textAlign: 'right' } }}
-                      />
-                    </Tooltip>
+                    <Typography> Overall Total:</Typography>
                   </TableCell>
                   <TableCell align="right">
                     <Tooltip title="This field is read-only" arrow>
@@ -981,11 +984,11 @@ const CreatePR = ({roleId}) => {
             <TableRow>
               <TableCell></TableCell>
               <TableCell></TableCell>
-              <TableCell>
-                <Typography fontWeight="bold">Overall Total:</Typography>
+              <TableCell></TableCell>
+              <TableCell></TableCell>
+                <TableCell>
+                <Typography fontWeight="bold">	Grand Total (VAT Inclusive):</Typography>
               </TableCell>
-              <TableCell align="right" sx={{ fontWeight: 'bold'}}>{sumSupplier('supplier1Total')}</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 'bold' }}>{sumSupplier('supplier2Total')}</TableCell>
               <TableCell align="right" sx={{ fontWeight: 'bold' }}>{sumSupplier('supplier3Total')}</TableCell>
             </TableRow>
           </TableFooter>
@@ -1019,4 +1022,4 @@ const CreatePR = ({roleId}) => {
     
   );
 };
-export default CreatePR;
+export default CreateQuotation;

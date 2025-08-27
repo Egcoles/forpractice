@@ -11,7 +11,7 @@ import { Document, Page } from '@react-pdf/renderer';
 import api from "../api";
 
 
-const PurchaseRequisition = () => {
+const Quotation = () => {
 const getStatusColor = (status) => {
     switch(status) {
         case 'FOR ENDORSEMENT':
@@ -28,7 +28,8 @@ const getStatusColor = (status) => {
             return 'inherit'; 
     }
 };
-  const { data: prs = [] } = useQuery({
+  
+ const { data: prs = [] } = useQuery({
     queryKey: ['prs'],
     queryFn: async () => {
       const response = await api.get("PR/PRTableDisplay", { withCredentials: true });
@@ -36,12 +37,11 @@ const getStatusColor = (status) => {
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
-
     const navigate = useNavigate();
 
-    const handleEdit = (prNumber) => {
+    const handleEdit = (ControlNo) => {
       // Adjust the route to your edit page as needed
-      navigate(`/pr/edit/${prNumber}`);
+      navigate(`/pr/edit/${ControlNo}`);
     };
 
     const [search, setSearch] = useState("");
@@ -56,37 +56,56 @@ const getStatusColor = (status) => {
     };
    
 
-    const columns = [
+const columns = [
         { 
-    field: 'prNumber', 
-    headerName: 'PR No.', 
+    field: 'ControlNo', 
+    headerName: 'Control No.', 
     width: 100,
     flex: 1,
     headerAlign: "center", 
     align: "center",
     renderCell: (params) => {
-    const handleClick = async () => {
-    try {
-      const response = await api.get(`PR/PRDetailsById/${params.row.prId}`, { responseType: 'blob' });
-      const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+      const handleClick = async () => {
+        try {
+          const response = await api.get(`PR/PRDetailsById/${params.row.prId}`, { responseType: 'blob' });
+          const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+          const pdfUrl = URL.createObjectURL(pdfBlob);
 
-      // Set state with PDF blob or URL
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      navigate('/pdf-view', { state: { pdfUrl } });
-    } catch (error) {
-      console.error('Error fetching PDF:', error);
-      alert('Failed to fetch PDF.'); // Show user feedback
-    } 
-  };
-
+          // Open the PDF in a new tab
+          window.open(pdfUrl, '_blank');
+        } catch (error) {
+          console.error('Error fetching PDF:', error);
+        }
+      };
 
       return <span style={{ cursor: 'pointer', color: 'blue' }} onClick={handleClick}>{params.value}</span>;
     }
   },
 
   {
-    field: 'projecDescription',
-    headerName: 'Project Description',
+    field: 'ProjectName',
+    headerName: 'Project Name',
+    headerAlign: "center", align: "center",
+    editable: false,
+    flex: 1,
+  },
+    {
+    field: 'ClientName',
+    headerName: 'Client Name',
+    headerAlign: "center", align: "center",
+    editable: false,
+    flex: 1,
+  },
+    {
+    field: 'Company',
+    headerName: 'Company',
+    headerAlign: "center", align: "center",
+    editable: false,
+    flex: 1,
+  },
+     {
+    field: 'Location',
+    headerName: 'Location',
     headerAlign: "center", align: "center",
     editable: false,
     flex: 1,
@@ -164,7 +183,7 @@ const getStatusColor = (status) => {
     return prs.filter(r => {
       const matchesStatus = status === "All" ? true : (r.formStatus ?? "None") === status;
       if (!q) return matchesStatus;
-      const hay = `${r.prNumber ?? ""} ${r.projecDescription ?? ""}`.toLowerCase();
+      const hay = `${r.ControlNo ?? ""} ${r.projecDescription ?? ""}`.toLowerCase();
       return matchesStatus && hay.includes(q);
     });
   }, [prs, search, status]);
@@ -174,11 +193,11 @@ const getStatusColor = (status) => {
   <Box sx={{ height: 400, width: '100%' }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5" component="h5" fontWeight="bold">
-          Purchase Requisition
+          Quotation
         </Typography>
-        <Button variant="contained" onClick={() => navigate('/pr/createPR')}>
+        <Button variant="contained" onClick={() => navigate('/quotation/createQuotation')}>
           <CreateIcon />
-          Create PR
+          Create Quotation
         </Button>
       </Stack>
        <Divider sx={{ my: 2, borderColor: 'primary.main' }} />
@@ -219,7 +238,7 @@ const getStatusColor = (status) => {
               },
             }}
             pageSizeOptions={[5]}
-            getRowId={(row) => row.prId ?? row.PRId ?? row.id ?? row.prNumber}
+            getRowId={(row) => row.prId ?? row.PRId ?? row.id ?? row.ControlNo}
           
         />
     </Box>
@@ -234,4 +253,4 @@ const getStatusColor = (status) => {
 };
 
 
-export default PurchaseRequisition;
+export default Quotation;

@@ -43,10 +43,10 @@ namespace TodoApi.Controllers
                     return Unauthorized(new { message = "Unable to determine the current user id from the token." });
                 }
 
-                 // Set the CreatedBy property
-                  model.CreatedBy = userId;
+                // Set the CreatedBy property
+                model.CreatedBy = userId;
 
-               
+
                 await _prRepository.InsertAsync(model);
                 return CreatedAtAction(nameof(GetAllPRs), new { id = model.PRId }, model);
             }
@@ -75,11 +75,13 @@ namespace TodoApi.Controllers
         [HttpGet("PRTableDisplay")]
         public async Task<IActionResult> GetPRTableDisplay()
         {
-            try {
+            try
+            {
                 var prs = await _prRepository.GetPRTableDisplay();
                 return Ok(prs);
             }
-            catch (Exception ex){
+            catch (Exception ex)
+            {
                 Console.WriteLine($"Error in GetPRTableDisplay: {ex.Message}");
                 return StatusCode(500, new { message = "An error occurred while retrieving purchase requests.", error = ex.Message });
             }
@@ -88,16 +90,32 @@ namespace TodoApi.Controllers
         [HttpGet("PRDetailsByPRNumber/{PRNumber}")]
         public async Task<IActionResult> GetPRDetailsByPRNumber(string PRNumber)
         {
-            try {
+            try
+            {
                 var pr = await _prRepository.GetPRDetailsByPRNumber(PRNumber);
                 return Ok(pr);
             }
-            catch (Exception ex){
+            catch (Exception ex)
+            {
                 Console.WriteLine($"Error in GetPRDetailsByPRNumber: {ex.Message}");
                 return StatusCode(500, new { message = "An error occurred while retrieving purchase requests.", error = ex.Message });
             }
         }
 
-        
+        [HttpGet("PRDetailsById/{PRId}")]
+        public async Task<IActionResult> GetPRDetailsById(int PRId)
+        {
+            try
+            {
+                var pr = await _prRepository.GetPRDetailsById(PRId);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetPRDetailsById: {ex.Message}");
+                return StatusCode(500, new { message = "An error occurred while retrieving purchase requests.", error = ex.Message });
+            }
+       }
+
     }
 }

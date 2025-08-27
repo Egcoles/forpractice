@@ -8,7 +8,9 @@ import Users from "./pages/maintenance/Users";
 import CreateUser from "./pages/maintenance/CreateUser";
 import Role from "./pages/maintenance/role";
 import PurchaseRequisition from "./pages/PurchaseRequisition";
-import CreatePR from './pages/PR/CreatePR';
+import Quotation from "./pages/Quotation";
+import CreatePR from "./pages/pr/CreatePR";
+import CreateQuotation from "./pages/Quotation/createQuotation";
 import Department from "./pages/maintenance/department";
 import RequireAuth from "./auths/authentication";
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -32,10 +34,12 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile" element={<Profile />} />
               <Route path ="/pr" element={<PurchaseRequisition />} />
+              <Route path ="/quotation" element={<Quotation />} />
 
 
               {/* PR Routes */}
-              <Route path="/PR/CreatePR" element={<CreatePR/>} />
+              <Route path="/pr/CreatePR" element={<CreatePR/>} />
+              <Route path="/quotation/createQuotation" element={<CreateQuotation/>} />
 
               {/* Maintenance Routes */}              
               <Route path="/maintenance/users" element={<Users />} />

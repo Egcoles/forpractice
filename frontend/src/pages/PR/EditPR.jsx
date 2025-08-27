@@ -13,7 +13,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs'; 
 
-const CreatePR = ({roleId}) => {
+const EditPR = ({roleId}) => {
   const queryClient = useQueryClient();
   const [form, setForm] = useState ({
     date: dayjs(),
@@ -1019,4 +1019,4 @@ const CreatePR = ({roleId}) => {
     
   );
 };
-export default CreatePR;
+export default EditPR;
