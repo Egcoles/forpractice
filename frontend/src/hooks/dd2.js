@@ -1,341 +1,582 @@
-import React, { useState } from "react";
-import {Box,Button,TextField,Typography,Autocomplete,Snackbar,Alert,} from "@mui/material";
-import { Save as SaveIcon } from "@mui/icons-material";
-import { useRoles } from "../../hooks/useRoles";
-// import { useApprovers } from "../../hooks/useApprovers";
-// import { useEndorsers } from "../../hooks/useEndorsers";
-import { useUsersByRole } from "../../hooks/useUsersByRole";
-import { useDepartmentNames } from "../../hooks/useDepartmentNames";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { use, useState } from "react";
+import { useMutation, useQueryClient} from "@tanstack/react-query";
 import api from "../../api";
+import { useUsers, useItems, useSuppliers } from "../../hooks/useUsers";
+import {useEndorsers} from "../../hooks/useEndorsers";
+import { useApprovers } from "../../hooks/useApprovers";
+import {FormControl, Select, Box,Button,TextField,Typography,Autocomplete,Grid,Divider,Paper,Stack,Table,TableBody,TableCell,TableContainer,TableFooter,TableHead,TableRow,Tooltip,} from "@mui/material";
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
+import { Add as AddIcon,Remove as RemoveIcon, Preview as PreviewIcon, Send as SendIcon} from "@mui/icons-material";
+import dayjs from 'dayjs'; 
 
-const CreateUser = () => {
+const CreateQuotation = ({roleId}) => {
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    username: "",
-    empId: "",
-    location: "",
-    position: "",
-    email: "",
-    RoleId: "",
-    DepartmentId: "",
-    ApproverId: "",
-    EndorserId: "",
-    signature: null,
-  });
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
+  const [form, setForm] = useState ({
+    clientName: '',
+    PrjectName: '',
+    companyName: '',
+    location: '',
+    CompanyAddress: '',
+    Terms: '', 
+    VAT: '',
+    discount: '',
+    submittedBy: '',
+    approver: '',
+    endorser: '',
+    overAllTotal: '',
+    GrandTotal: '',
   });
 
-  const showSnackbar = (message, severity = "success") => {
-    setSnackbar({ open: true, message, severity });
-  };
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState({});
+  const {data: users = [], isLoading, isError} = useUsers();
+  const selectedUser = form.submittedBy || null;
+  const {data: approvers = [], isAppLoading, isAppError} = useApprovers();
+  const selectedApprover = form.approver || null;
+  const {data: endorsers = [], isEndoLoading, isEndoError} = useEndorsers();
+  const selectedEndorser = form.endorser || null;
+  const {data: particulars = [], isItemLoading, isItemError} = useItems();
 
-  const handleSnackbarClose = () =>
-    setSnackbar((prev) => ({ ...prev, open: false }));
 
-  const createUserMutation = useMutation({
-    mutationFn: (newUser) =>
-      api.post("/user/create", newUser, { withCredentials: true }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(["users"]);
-      showSnackbar("User created successfully");
-      console.log("User created successfully:", formData);
-      setFormData({
-        firstName: "",
-        lastName: "",
-        username: "",
-        empId: "",
-        location: "",
-        position: "",
-        email: "",
-        RoleId: "",
-        DepartmentId: "",
-        ApproverId: "",
-        EndorserId: "",
-        signature: null,
-      });
-    },
-    onError: () =>
-      showSnackbar("Error creating user. Please try again.", "error"),
+  // Dynamic line items
+  const initialItem = () => ({
+    id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+    item: null,
+    itemDescription: '',
+    unit: '',
+    qty: '',
+    unitCost: '',
+    markupPercentage: '',
+    totalCost: '',
+    isPrimary: false,
   });
 
-  //const { data: approvers = [], isAppLoading, isAppError} = useApprovers();
-  //const { data: endorsers = [], isEndorseLoading, isEndorseError} = useEndorsers();
-  const { data: roles = [], isLoading, isError } = useRoles();
-  const { data: departments = [], isLoading: isDeptLoading, isError: isDeptError, } = useDepartmentNames();
+  const [items, setItems] = useState([{ ...initialItem(), isPrimary: true }]);
+  const [rowErrors, setRowErrors] = useState([{}]);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'warning' });
+  const [canSubmit, setCanSubmit] = useState(false); 
+
+  const options = [
+    { label: 'With VAT', value: 1.12},
+    { label: 'Without VAT', value:0 },
+  ]
+
+  const [qty, setQty] = useState(0);
+  const [unitCost, setUnitCost] = useState(0);
+  const [markup, setMarkup] = useState(0);
+  const [discount, setDiscount] = useState(0);
+  const [selectedOptions, setselectedOptions] = useState(false);
   
-  // Selected Role
-  const selectedRole = roles.find(r => r.id === formData.RoleId);
-// Dynamically determine approver & endorser Role IDs from roles array
-  const approverRoleId =
-    (selectedRole?.roleName === "Encoder" || selectedRole?.roleName === "Endorser")
-      ? roles.find(r => r.roleName === "Approver")?.id || null
-      : null;
-
-  const endorserRoleId =
-    selectedRole?.roleName === "Encoder"
-      ? roles.find(r => r.roleName === "Endorser")?.id || null
-      : null;
-
-  // Fetch approvers & endorsers dynamically
-  const { data: approvers = [], isLoading: isAppLoading, isError: isAppError } =
-    useUsersByRole(approverRoleId, !!approverRoleId);
-
-  const { data: endorsers = [], isLoading: isEndorseLoading, isError: isEndorseError } =
-    useUsersByRole(endorserRoleId, !!endorserRoleId);
-
-  if (isLoading || isDeptLoading || isAppLoading || isEndorseLoading) {
-    return <Typography>Loading please wait...</Typography>;
-  }
-  if (isError || isDeptError || isAppError || isEndorseError) {
-    return <Typography color="error">Failed to load the data.</Typography>;
-  }
-
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === "signature") {
-      setFormData({ ...formData, [name]: files[0] });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+  const calculatePerRowCost = () => {
+    return qty * unitCost;
   };
 
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const userData = new FormData();
-    for (const key in formData) {
-      if (formData[key]) {
-        userData.append(key, formData[key]);
-      }
+  const calculateTotalCost = () => {
+    let totalCost = calculatePerRowCost();
+    let overallTotal = totalCost;
+    let grandTotal = totalCost;
+    // Apply markup if present
+    if (markup > 0) {
+      totalCost *= (1 + markup / 100);
+      overallTotal *= (1 + markup / 100);
+      grandTotal *= (1 + markup / 100);
     }
-    createUserMutation.mutate(userData);
+    // Apply discount if present
+    if (discount > 0) {
+      overallTotal -= overallTotal * (discount / 100);
+      grandTotal -= grandTotal * (discount / 100);
+    }
+    //Apply VAT if selected
+    if (selectedOptions) {
+      grandTotal *= 1.12; // Adding VAT (12%)
+    }
+    return { totalCost, overallTotal, grandTotal };
   };
+  const {totalCost, overallTotal, grandTotal} = calculateTotalCost();
 
-  // const selectedRole = roles.find((r) => r.id === formData.RoleId);
-  // const selectedDepartment = departments.find( (d) => d.id === formData.DepartmentId);
-  // const selectedApprover = routings.find( (u) => u.userId === formData.ApproverId);
-  // const selectedEndorser = routings.find((u) => u.userid === formData.EndorserId);
   return (
-    <Box sx={{ maxWidth: 960, mx: "auto", px: 3, py: 4 }}>
-      <Typography variant="h5" fontWeight="bold" gutterBottom>
-        Create New User
+    <Box sx={{
+       width: '100%',
+       }}>
+      <Typography variant="h5" component="h5" fontWeight="bold">
+        Quotation
       </Typography>
-
-      <Box
-        component="form"
-        onSubmit={handleSubmit}
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
-          gap: 2,
-          mt: 2,
-        }}
-      >
-        <TextField
-          id="empId"
-          label="Employee ID"
-          name="empId"
-          value={formData.empId}
-          onChange={handleChange}
-          required
-          fullWidth
-          autoComplete="off"
-        />
-        <TextField
-          id="username"
-          label="User Name"
-          name="username"
-          value={formData.username}
-          onChange={handleChange}
-          required
-          fullWidth
-          autoComplete="username"
-        />
-        <TextField
-          id="firstName"
-          label="First Name"
-          name="firstName"
-          value={formData.firstName}
-          onChange={handleChange}
-          required
-          fullWidth
-          autoComplete="given-name"
-        />
-        <TextField
-          id="lastName"
-          label="Last Name"
-          name="lastName"
-          value={formData.lastName}
-          onChange={handleChange}
-          required
-          fullWidth
-          autoComplete="family-name"
-        />
-        <TextField
-          id="location"
-          label="Location"
-          name="location"
-          value={formData.location}
-          onChange={handleChange}
-          fullWidth
-          autoComplete="off"
-        />
-        <TextField
-          id="position"
-          label="Position"
-          name="position"
-          value={formData.position}
-          onChange={handleChange}
-          fullWidth
-          autoComplete="organization-title"
-        />
-        <TextField
-          id="email"
-          label="Email Address"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          fullWidth
-          autoComplete="email"
-        />
-
-         {/* Role Selection */}
-                <Autocomplete
-                  fullWidth
-                  required
-                  options={roles}
-                  getOptionLabel={(option) => option?.roleName || `Role ${option?.id}`}
-                  value={selectedRole || null}
-                  onChange={(event, newValue) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      RoleId: newValue ? newValue.id : "",
-                      ApproverId: "",
-                      EndorserId: ""
-                    }));
-                  }}
-                  renderInput={(params) => <TextField {...params} label="User Role" />}
-                  isOptionEqualToValue={(option, value) => option.id === value.id}
-                />
+      <Divider sx={{ my: 2, borderColor: 'primary.main' }} />
+    <form noValidate>
+      <Grid container alignItems="center" justifyContent="center" spacing={2}>
+        <Grid size={6}>
+            <TextField
+            className="clientName"
+            name="clientName"
+            label="Client Name"
+            multiline
+            fullWidth 
+            variant="outlined"
+            error={!!errors.clientName}
+            helperText={errors.clientName}
+            value={form.clientName}
         
-                {/* Approver */}
-                {(selectedRole?.roleName === "Encoder" || selectedRole?.roleName === "Endorser") && (
-                  <Autocomplete
-                    options={approvers}
-                    getOptionLabel={(option) => option?.fullName || `Approver ${option?.userId}`}
-                    value={approvers.find((u) => u.userId === formData.ApproverId) || null}
-                    onChange={(event, newValue) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        ApproverId: newValue ? newValue.userId : "",
-                      }));
-                    }}
-                    renderInput={(params) => <TextField {...params} label="Approver" required />}
-                    isOptionEqualToValue={(option, value) => option.userId === value.userId}
-                  />
-                )}
+          />
+        </Grid>
+         <Grid size={6}>
+            <TextField
+            className="ProjectName"
+            name="ProjectName"
+            label="Project Name"
+            multiline
+            fullWidth 
+            variant="outlined"
+            error={!!errors.ProjectName}
+            helperText={errors.ProjectName}
+            value={form.ProjectName}
         
-                {/* Endorser */}
-                {selectedRole?.roleName === "Encoder" && (
-                  <Autocomplete
-                    options={endorsers}
-                    getOptionLabel={(option) => option?.fullName || `Endorser ${option?.userId}`}
-                    value={endorsers.find((u) => u.userId === formData.EndorserId) || null}
-                    onChange={(event, newValue) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        EndorserId: newValue ? newValue.userId : "",
-                      }));
-                    }}
-                    renderInput={(params) => <TextField {...params} label="Endorser" required />}
-                    isOptionEqualToValue={(option, value) => option.userId === value.userId}
-                  />
-                )}
-                <Autocomplete
-                options={departments}
-                getOptionLabel={(option) =>
-                  option?.departmentName || `Department ${option?.id}`
-                }
-                value={departments.find((d) => d.id === formData.DepartmentId) || null}
-                onChange={(event, newValue) => {
-                setFormData((prev) => ({
-                  ...prev,
-                  DepartmentId: newValue ? newValue.id : "",
-                }));
-                console.log("Selected Department:", newValue);
-              }}
-              renderInput={(params) => (
-                <TextField {...params} label="Department" required />
-              )}
-              isOptionEqualToValue={(option, value) => option.id === value.id}
-              ListboxProps={{
-                style: {
-                  maxHeight: 200,
-                  overflow: "auto",
-                },
-              }}
-            />
-
-
-            <Box>
-              <label htmlFor="signature">
-                <Button variant="outlined" component="span" fullWidth>
-                  Upload Signature
-                </Button>
-              </label>
-              <input
-                id="signature"
-                hidden
-                type="file"
-                name="signature"
-                accept="image/*"
-                onChange={handleChange}
-              />
-              {formData.signature && (
-                <Typography variant="caption" mt={1} display="block">
-                  {formData.signature.name}
-                </Typography>
-              )}
-            </Box>
-
-            <Box sx={{ gridColumn: "1 / -1", mt: 2, textAlign: "right" }}>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                disabled={createUserMutation.isLoading}
+          />
+        </Grid>
+        <Grid size={4}>
+         <Autocomplete
+            options={users}
+            getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`}
+            value={selectedUser}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined" 
+                label="Comapany Name"
+                className="companyName"
+                name="companyName"
+                error={!!errors.companyName}
+                helperText={errors.companyName}
                 sx={{
-                  transition: "transform 0.1s ease-in-out",
-                  "&:hover": { transform: "scale(0.95)" },
-                  "&:active": { transform: "scale(0.92)" },
+                  '& .MuiInput-root': {
+                    '& fieldset': {
+                      border: 'none', 
+                    },
+                    '&:hover fieldset': {
+                      border: 'none', 
+                    },
+                    '&.Mui-focused fieldset': {
+                      border: 'none',
+                    },
+                  },
                 }}
-              >
-                <SaveIcon sx={{ mr: 1 }} />
-                {createUserMutation.isLoading ? "Saving..." : "Save"}
-              </Button>
-            </Box>
-          </Box>
+              />
+            )}
+          />
+        </Grid>
+         <Grid size={4}>
+         <Autocomplete
+            options={users}
+            getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`}
+            value={selectedUser}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined" 
+                label="Location"
+                className="location"
+                name="location"
+                error={!!errors.location}
+                helperText={errors.location}
+                sx={{
+                  '& .MuiInput-root': {
+                    '& fieldset': {
+                      border: 'none', 
+                    },
+                    '&:hover fieldset': {
+                      border: 'none', 
+                    },
+                    '&.Mui-focused fieldset': {
+                      border: 'none',
+                    },
+                  },
+                }}
+              />
+            )}
+          />
+        </Grid>
+            <Grid size={4}>
+            <TextField
+            className="CompanyAddress"
+            name="CompanyAddress"
+            label="Company Address"
+            multiline
+            fullWidth 
+            variant="outlined"
+            error={!!errors.CompanyAddress}
+            helperText={errors.CompanyAddress}
+            value={form.project}
+        
+          />
+        </Grid>
+        <Grid size={12}>
+            <TextField
+            className="Terms"
+            name="Terms"
+            label="Terms & Condition"
+            value ="1.Price is in Philippine Peso and VAT INCLUSIVE 
+            2.Delivery: 
+            3.Payment: 
+            4.Warranty: 
+            5.Price Validity:"
+            textAlign = 'right'
+            multiline
+            fullWidth 
+            minRows={4} 
+            maxRows={10}
+            variant="outlined"
+            error={!!errors.Terms}
+            helperText={errors.Terms}
+        
+            slotProps={{
+                 style: { textAlign: 'right' }, 
+            }}
+          />
+        </Grid>
+        <Grid size={6}>
+         <Autocomplete
+            options={options}
+            value={selectedOptions}
+            onChange={() => setVatIncluded(!vatIncluded)} 
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined" 
+                label="VAT"
+                className="vat"
+                name="vat"
+                error={!!errors.vat}
+                helperText={errors.vat}
+                sx={{
+                  '& .MuiInput-root': {
+                    '& fieldset': {
+                      border: 'none', 
+                    },
+                    '&:hover fieldset': {
+                      border: 'none', 
+                    },
+                    '&.Mui-focused fieldset': {
+                      border: 'none',
+                    },
+                  },
+                }}
+              />
+            )}
+          />
+        </Grid>
+          <Grid size={6}>
+            <TextField
+            className="discount"
+            name="discount"
+            label="Discount"
+            multiline
+            fullWidth 
+            variant="outlined"
+            error={!!errors.discount}
+            helperText={errors.discount}
+            value={form.discount}
+            onChange={(e) => setDiscount(e.target.value)}
+        
+          />
+        </Grid>
+   
+        <Grid size={4}>
+           {roleId !== '32' && (
+          <Autocomplete
+            options={endorsers}
+            getOptionLabel={(option) => option?.fullName || `Endorser ${option?.userId}`}
+            value={selectedEndorser}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined" 
+                label="Submitted By"
+                className="submittedBy"
+                name="submittedBy"
+                error={!!errors.submittedBy}
+                helperText={errors.submittedBy}
+                sx={{
+                  '& .MuiInput-root': {
+                    '& fieldset': {
+                      border: 'none', 
+                    },
+                    '&:hover fieldset': {
+                      border: 'none', 
+                    },
+                    '&.Mui-focused fieldset': {
+                      border: 'none',
+                    },
+                  },
+                }}
+              />
+            )}
+          />
+          )}
 
-          <Snackbar
-            open={snackbar.open}
-            autoHideDuration={4000}
-            onClose={handleSnackbarClose}
-            anchorOrigin={{ vertical: "top", horizontal: "right" }}
-          >
-            <Alert onClose={handleSnackbarClose} severity={snackbar.severity}>
-              {snackbar.message}
-            </Alert>
-          </Snackbar>
-        </Box>
+        </Grid>
+        <Grid size={4}>
+          {roleId !== '33' && (
+           <Autocomplete
+            options={approvers}
+            getOptionLabel={(option) => option?.fullName || `Approver ${option?.userId}`}
+            value={selectedApprover}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined" 
+                label="Select Approver"
+                className="approver"
+                name="approver"
+                error={!!errors.approver}
+                helperText={errors.approver}
+                sx={{
+                  '& .MuiInput-root': {
+                    '& fieldset': {
+                      border: 'none', 
+                    },
+                    '&:hover fieldset': {
+                      border: 'none', 
+                    },
+                    '&.Mui-focused fieldset': {
+                      border: 'none',
+                    },
+                  },
+                }}
+              />
+            )}
+          />
+          )}
+        </Grid>
+             <Grid size={4}>
+          {roleId !== '33' && (
+           <Autocomplete
+            options={approvers}
+            getOptionLabel={(option) => option?.fullName || `Approver ${option?.userId}`}
+            value={selectedApprover}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined" 
+                label="Select Approver"
+                className="approver"
+                name="approver"
+                error={!!errors.approver}
+                helperText={errors.approver}
+                sx={{
+                  '& .MuiInput-root': {
+                    '& fieldset': {
+                      border: 'none', 
+                    },
+                    '&:hover fieldset': {
+                      border: 'none', 
+                    },
+                    '&.Mui-focused fieldset': {
+                      border: 'none',
+                    },
+                  },
+                }}
+              />
+            )}
+          />
+          )}
+        </Grid>
+        
+      </Grid>
+      <Stack direction="row" spacing={2} mt={2} mb={2}> 
+        <Button variant="contained" ><AddIcon/></Button>
+        <Button variant="outlined" color="error"  disabled={items.length === 1}><RemoveIcon/></Button>
+      </Stack>
+      <TableContainer component={Paper}>
+        <Table
+          sx={{
+            minWidth: 650,
+            borderCollapse: 'separate',
+            borderSpacing: '12px 0',
+          }}
+          aria-label="simple table"
+        >
+          <TableHead>
+            <TableRow>
+              <TableCell align="center">Particular </TableCell>
+              <TableCell align="center">Unit</TableCell>
+              <TableCell align="center">Qty</TableCell>
+              <TableCell align="center">Unit Cost</TableCell>
+              <TableCell align="center">Markup(%)</TableCell>
+              <TableCell align="center">Total Cost</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {items.map((row, idx) => (
+              <React.Fragment key={row.id || idx}>
+                <TableRow>
+                  <TableCell sx={{ minWidth: 320, width: '35%' }}>
+                    <Autocomplete
+                      fullWidth
+                      options={particulars}
+                      getOptionLabel={(option) => option?.itemName|| `Item ${option?.itemId}`}
+                      disablePortal={false}
+                      slotProps={{listbox: { maxheight: 240, overflow: 'auto'},}}
+                      value={row.item}
+                      isOptionEqualToValue={(o, v) => (o?.itemId ?? o?.ItemId) === (v?.itemId ?? v?.ItemId)}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          variant="outlined" 
+                          label="Select an Item"
+                          className="item"
+                          name={`item_${idx}`}
+                          error={!!rowErrors[idx]?.item}
+                          helperText={rowErrors[idx]?.item || ''}
+                          sx={{
+                            '& .MuiInput-root': {
+                              '& fieldset': {
+                                border: 'none', 
+                              },
+                              '&:hover fieldset': {
+                                border: 'none', 
+                              },
+                              '&.Mui-focused fieldset': {
+                                border: 'none',
+                              },
+                            },
+                          }}
+                        />
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Tooltip title="This field is read-only" arrow>
+                      <TextField 
+                        slotProps={{input: { readOnly: true },}}
+                        variant="outlined"
+                        className="unit" 
+                        name={`unit_${idx}`}
+                        value={row.unit}
+                      />
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell>
+                    <TextField 
+                      label="Input Qty" 
+                      variant="outlined" 
+                      type="number" 
+                      className="qty" 
+                      name={`qty_${idx}`}
+                      onChange={(e) => setQuantity(e.target.value)}
+                      value={row.qty}
+                      error={!!rowErrors[idx]?.qty}
+                      helperText={rowErrors[idx]?.qty || ''}
+                    />
+                  </TableCell>
+                  <TableCell>
+                      <TextField  
+                        label="Input Unit Cost" 
+                        variant="outlined" 
+                        type="number" 
+                        className="unitCost" 
+                        name={`unitCost_${idx}`}
+                        onChange={(e) => setUnitCost(e.target.value)}
+                        value={row.unitCost}
+                        error={!!rowErrors[idx]?.unitCost}
+                        helperText={rowErrors[idx]?.unitCost || ''}
+                      />
+                  </TableCell>
+                  <TableCell>
+                      <TextField  
+                        label="Input MarkUp" 
+                        variant="outlined" 
+                        type="number"  
+                        className="markup" 
+                        name={`inputMarkup_${idx}`}
+                        onChange={(e) => setMarkup(e.target.value)}
+                        value={row.markup}
+                        error={!!rowErrors[idx]?.markup}
+                        helperText={rowErrors[idx]?.markup || ''}
+                      />
+                  </TableCell>
+                  <TableCell>
+                    <Tooltip title="This field is read-only" arrow>
+                        <TextField  
+                        variant="outlined" 
+                        type="number"  
+                        className="totalCost" 
+                        name={`totalCost_${idx}`}
+                        slotProps={{input: { readOnly: true },}}
+                        value={row.totalCost}
+                        error={!!rowErrors[idx]?.totalCost}
+                        helperText={rowErrors[idx]?.totalCost || ''}
+                      />
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>
+                    <TextField
+                      label="Input Item Description"
+                      multiline
+                      fullWidth 
+                      variant="outlined"
+                      className="itemDescription"
+                      name={`itemDescription_${idx}`}
+                      value={row.itemDescription}
+                      error={!!rowErrors[idx]?.itemDescription}
+                      helperText={rowErrors[idx]?.itemDescription || ''}
+                    />
+                  </TableCell>
+                </TableRow>
+              </React.Fragment>
+            ))}
+          </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TableCell></TableCell>
+              <TableCell></TableCell>
+              <TableCell></TableCell>
+              <TableCell></TableCell>
+                <TableCell>
+                <Typography fontWeight="bold">	Over ALl Total:${overallTotal.toFixed(2)}</Typography>
+              </TableCell>
+              <TableCell align="right" sx={{ fontWeight: 'bold' }}></TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell></TableCell>
+              <TableCell></TableCell>
+              <TableCell></TableCell>
+              <TableCell></TableCell>
+                <TableCell>
+                <Typography fontWeight="bold">	Grand Total (VAT Inclusive):${grandTotal.toFixed(2)}</Typography>
+              </TableCell>
+              <TableCell align="right" sx={{ fontWeight: 'bold' }}></TableCell>
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </TableContainer>
+
+      <Stack direction="row" spacing={2} mt={2} mb={2}
+       sx={{ display: 'flex', justifyContent: 'flex-end' }}
+       > 
+        <Button variant="outlined" startIcon={<PreviewIcon/>}>
+           Preview
+        </Button>
+        <Button variant="contained" type="submit" endIcon={<SendIcon />} disabled={!canSubmit}>
+          Submit
+        </Button>
+      </Stack>
+    </form>
+
+    <Snackbar
+      open={snackbar.open}
+      autoHideDuration={4000}
+      onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+    >
+      <Alert onClose={() => setSnackbar((s) => ({ ...s, open: false }))} severity={snackbar.severity} sx={{ width: '100%' }}>
+        {snackbar.message}
+      </Alert>
+    </Snackbar>
+
+    </Box>
+    
   );
 };
-
-export default CreateUser;
+export default CreateQuotation;
