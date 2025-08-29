@@ -90,4 +90,3 @@ C:\Dump_Project\Practice\TodoApi\bin\Debug\net8.0\Microsoft.Extensions.ObjectPoo
 C:\Dump_Project\Practice\TodoApi\bin\Debug\net8.0\Newtonsoft.Json.dll
 C:\Dump_Project\Practice\TodoApi\bin\Debug\net8.0\System.Net.WebSockets.WebSocketProtocol.dll
 C:\Dump_Project\Practice\TodoApi\bin\Debug\net8.0\Dapper.dll
-C:\Dump_Project\Practice\TodoApi\obj\Debug\net8.0\TodoApi.sourcelink.json
