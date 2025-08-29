@@ -13,17 +13,22 @@ import dayjs from 'dayjs';
 const CreateQuotation = ({roleId}) => {
   const queryClient = useQueryClient();
   const [form, setForm] = useState ({
-    clientName: '',
-    PrjectName: '',
-    companyName: '',
-    location: '',
-    CompanyAddress: '',
-    Terms: '', 
-    submittedBy: '',
-    approver: '',
-    endorser: '',
-    qty: '',
-    unitCost: '',
+    clientName: "",
+    ProjectName: "",
+    companyName: "",
+    location: "",
+    CompanyAddress: "",
+    Terms: `
+      1. Price is in Philippine Peso and VAT INCLUSIVE
+      2. Delivery:
+      3. Payment:
+      4. Warranty:
+      5. Price Validity:`,
+    submittedBy: "",
+    approver: "",
+    endorser: "",
+    qty: "",
+    unitCost: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -60,132 +65,149 @@ const CreateQuotation = ({roleId}) => {
     { label: 'Without VAT', name: 'Without VAT', value: 1  },
   ]
 
-  // const [qty, setQty] = useState(0);
-  // const [unitCost, setUnitCost] = useState(0);
-  // const [markup, setMarkup] = useState(0);
-  // const [discount, setDiscount] = useState(0);
+  const [qty, setQty] = useState(0);
+  const [unitCost, setUnitCost] = useState(0);
+  const [markup, setMarkup] = useState(0);
+  const [discount, setDiscount] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState(null);
-  const calculatePerRowCost = () => {
+  const calculatePerRowCost = (row) => {
       const qty = parseFloat(row.qty) || 0;
       const unitCost = parseFloat(row.unitCost) || 0;
       const markup = parseFloat(row.markup) || 0;
 
-      let totalCost = qty > 0 && unitCost > 0 ? qty * unitCost : 0; // Calculate total cost
+      let totalCost = qty > 0 && unitCost > 0 ? qty * unitCost : 0; 
       let newTotalCost = totalCost;
 
       if (markup > 0) {
-          const increasePrice = totalCost * (markup / 100); // Calculate increase based on markup percentage
-          newTotalCost = totalCost + increasePrice; // New total cost with markup
+          const increasePrice = totalCost * (markup / 100); 
+          newTotalCost = totalCost + increasePrice; 
       }
 
-      return {
-          totalCost: totalCost.toFixed(2), // Return fixed total cost as a string
-          newTotalCost // Return new total cost, calculated with markup
-      };
+      row.totalCost = newTotalCost.toFixed(2);
+
+      return { totalCost: totalCost.toFixed(2), newTotalCost };
   };
+
   const calculateTotalCost = () => {
-        const { totalCost, newTotalCost } = calculatePerRowCost(); // Destructure totalCost and newTotalCost
-        let overallTotal = newTotalCost;
-        let grandTotal = newTotalCost;
+      let overallTotal = 0;
+      let grandTotal = 0;
+     
 
-        if (discount > 0) {
-            overallTotal -= (overallTotal * (discount / 100)); // Apply discount to overallTotal.
-            grandTotal -= (grandTotal * (discount / 100)); // Apply discount to grandTotal.
-        }
+      items.forEach(item => {
+          const { totalCost, newTotalCost } = calculatePerRowCost(item);
+          overallTotal += parseFloat(newTotalCost);
+          grandTotal += parseFloat(newTotalCost);
+      });
 
-        if (selectedOptions && selectedOptions.value === 1.12) {
-            grandTotal *= 1.12; // Multiply by 1.12 if VAT is selected
-        }
+      if (discount > 0) {
+          overallTotal -= discount;
+          grandTotal -= discount;
+      }
 
-        return { totalCost, overallTotal, grandTotal };
-    };
+      if (selectedOptions && selectedOptions.value === 1.12) {
+          grandTotal *= 1.12; 
+      }
+
+      return { totalCost: overallTotal.toFixed(2), overallTotal, grandTotal };
+  };
+
 
   const {overallTotal, grandTotal} = calculateTotalCost();
 
   const handleItemFieldChange = (index, field, value) => {
-    setItems((prev) => {
-      const next = [...prev];
-      const row = {...next[index], [field]: value};
+      setItems((prev) => {
+          const next = [...prev];
+          const row = {...next[index], [field]: value};
+          if (['qty', 'unitCost', 'markup'].includes(field)) {
+              const totals = calculatePerRowCost(row);
+              row.totalCost = totals.totalCost;
+          }
+          next[index]= row;
+          return next;
+      });
       if (['qty', 'unitCost', 'markup'].includes(field)) {
-        const totals = calculatePerRowCost(row);
-        row.totalCost = totals.totalCost;
+          setRowErrors((prevErrors) => {
+              const nextErrors = [...prevErrors];
+              const num = parseFloat(value);
+              if (value === '' || value === null || isNaN(num)) {
+                  nextErrors[index] = {...nextErrors[index], [field]: ''};
+              } else if (num <= 0) {
+                  nextErrors[index] = {...nextErrors[index], [field]: "Please input number greater than zero"};
+              } else {
+                  nextErrors[index] = {...nextErrors[index], [field]: ''};
+              }
+              return nextErrors;
+          });
       }
-      next[index]= row;
-      return next;
-    });
-    setRowErrors((prev) => {
-      const next = [...prev];
-      if (['qty', 'unitCost', 'markup'].includes(field)) {
-        const num = parseFloat(value);
-        if (value === '' || value === null || value === undefined || isNaN(num)) {
-          next[index] = {...next[index], [field]: ''};
-        } else if (num <= 0) {
-          next[index] = {...next[index], [field]: " Please input number greater tha zero"};
-        } else {
-          next[index] = {...next[index], [field]: ''};
-        }
-      } else {
-        next[index] = {...next[index], [field]: ''};
-      }
-      return next;
-    });
-    setCanSubmit(false);
+      setCanSubmit(false);
   };
+
+
+
+const handleChange = (e) => {
+    const discount = e.target.value;
+    const numericValue = parseFloat(value); 
+    if (value === '' || (numericValue > 0 && !isNaN(numericValue))) {
+        setDiscount(numericValue);
+    }
+};
+
 
   const openSnackbar = (message, severity = 'warning') => setSnackbar({ open: true, message, severity });
 
-  const validateRow = (row) => {
-    const re = {};
-    const q = parseFloat(row.qty) || 0;
-    const u = parseFloat(row.unitCost) || 0;
-    const m = parseFloat(row.markup) || 0;
-    const errorMessage = 'Please input the required field.';
-    const errorNumber = 'Please input the number greater than zero.';
-    if (!row.item || (row.item?.itemId ?? row.item?.ItemId)) re.item = errorMessage;
-    if (!row.itemDescription) re.itemDescription = errorMessage;
-    if (!q  || q <= 0) re.qty = errorNumber;
-    if (!u  || u <= 0) re.unitCost = errorNumber;
-    if (!m  || m <= 0) re.markup = errorNumber;
-    return re;
-  };
+  // const validateRow = (row) => {
+  //   const re = {};
+  //   const q = parseFloat(row.qty) || 0;
+  //   const u = parseFloat(row.unitCost) || 0;
+  //   const m = parseFloat(row.markup) || 0;
+  //   const errorMessage = 'Please input the required field.';
+  //   const errorNumber = 'Please input the number greater than zero.';
+  //   if (!row.item || (row.item?.itemId ?? row.item?.ItemId)) re.item = errorMessage;
+  //   if (!row.itemDescription) re.itemDescription = errorMessage;
+  //   if (!q  || q <= 0) re.qty = errorNumber;
+  //   if (!u  || u <= 0) re.unitCost = errorNumber;
+  //   if (!m  || m <= 0) re.markup = errorNumber;
+  //   return re;
+  // };
 
-  //this function to validate if has duplicate item not being selected again
-  const ValidateRows = () => {
-    const errs = items.map(validateRow);
-    let duplicateFound = false;
-    for (let i = 0; i < items.length; i++) {
-      const row = items[i];
-      const itemKey = row.item?.itemId ?? row.item?.ItemId;
-      if (!itemKey) continue;
+  // //this function to validate if has duplicate item not being selected again
+  // const ValidateRows = () => {
+  //   const errs = items.map(validateRow);
+  //   let duplicateFound = false;
+  //   for (let i = 0; i < items.length; i++) {
+  //     const row = items[i];
+  //     const itemKey = row.item?.itemId ?? row.item?.ItemId;
+  //     if (!itemKey) continue;
    
-    }
-  }
+  //   }
+  // }
 
-  const canAddNewRow = () => {
-    let valid = true;
-    let warningMessage = "This is a rquired field.";
-    const hasInput = Boolean(form.qty || form.unitCost)
-    if (!hasInput) {
-      setErrors((prev) => ({
-        ...prev,
-        qty: warningMessage,
-        unitCost: warningMessage,
-      }))
-      valid = false;
-    }
+//  const canAddNewRow = () => {
+//     let valid = true;
+//     const warningMessage = "This is a required field.";
 
-    const rowsOk = validateRow();
-    valid = valid && rowsOk;
-    if (!valid) {
-      if(!hasDuplicate) openSnackbar("Please complete the require field before adding new row.");
-      return false;
-    }
-    return true;
-  };
+//     // Validate for required values in the form
+//     const hasInput = Boolean(form.qty || form.unitCost);
+//     if (!hasInput) {
+//         setErrors({ qty: warningMessage, unitCost: warningMessage });
+//         valid = false;
+//     }
+
+//     // Validate each row
+//     const rowsOk = items.every((item) => Object.keys(validateRow(item)).length === 0);
+//     valid = valid && rowsOk;
+//     if (!valid) {
+//         openSnackbar("Please complete the required fields before adding a new row.");
+//         return false;
+//     }
+
+//     return true;
+// };
+
 
 
   const additemRow = () => {
-    if(!canAddNewRow()) return;
+    // if(!canAddNewRow()) return;
     const newRow = initialItem();
     newRow.isPrimary = false;
     setItems((prev) => [...prev, newRow]);
@@ -210,6 +232,7 @@ const CreateQuotation = ({roleId}) => {
       <Grid container alignItems="center" justifyContent="center" spacing={2}>
         <Grid size={6}>
             <TextField
+            id = "clientName"
             className="clientName"
             name="clientName"
             label="Client Name"
@@ -219,11 +242,12 @@ const CreateQuotation = ({roleId}) => {
             error={!!errors.clientName}
             helperText={errors.clientName}
             value={form.clientName}
-        
+            onChange={(e) => setForm({ ...form, clientName: e.target.value })}
           />
         </Grid>
          <Grid size={6}>
             <TextField
+            id="ProjectName"
             className="ProjectName"
             name="ProjectName"
             label="Project Name"
@@ -233,14 +257,15 @@ const CreateQuotation = ({roleId}) => {
             error={!!errors.ProjectName}
             helperText={errors.ProjectName}
             value={form.ProjectName}
-        
+            onChange={(e) => setForm({ ...form, ProjectName: e.target.value })}
           />
         </Grid>
         <Grid size={4}>
          <Autocomplete
             options={users}
-            getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`}
+            getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`} // must change into company options
             value={selectedUser}
+            onChange={(event, newValue) => setForm({ ...form, companyName: newValue })} //-> need to declare the state selected company = company
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -248,6 +273,7 @@ const CreateQuotation = ({roleId}) => {
                 label="Comapany Name"
                 className="companyName"
                 name="companyName"
+                id="companyName"
                 error={!!errors.companyName}
                 helperText={errors.companyName}
                 sx={{
@@ -270,8 +296,9 @@ const CreateQuotation = ({roleId}) => {
          <Grid size={4}>
          <Autocomplete
             options={users}
-            getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`}
+            getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`} // must change into company options
             value={selectedUser}
+            onChange={(event, newValue) => setForm({ ...form, location: newValue })} //-> need to declare the state selected location = location
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -279,6 +306,7 @@ const CreateQuotation = ({roleId}) => {
                 label="Location"
                 className="location"
                 name="location"
+                id="location"
                 error={!!errors.location}
                 helperText={errors.location}
                 sx={{
@@ -302,27 +330,24 @@ const CreateQuotation = ({roleId}) => {
             <TextField
             className="CompanyAddress"
             name="CompanyAddress"
+            id="CompanyAddress"
             label="Company Address"
             multiline
             fullWidth 
             variant="outlined"
             error={!!errors.CompanyAddress}
             helperText={errors.CompanyAddress}
-            value={form.project}
-        
+            value={form.CompanyAddress}
+            onChange={(e) => setForm({ ...form, CompanyAddress: e.target.value })}
           />
         </Grid>
         <Grid size={12}>
             <TextField
             className="Terms"
             name="Terms"
+            id="Terms"
             label="Terms & Condition"
-            value ="
-            1.Price is in Philippine Peso and VAT INCLUSIVE 
-            2.Delivery: 
-            3.Payment: 
-            4.Warranty: 
-            5.Price Validity:"
+            value={form.Terms} 
             textalign = 'right'
             multiline
             fullWidth 
@@ -331,7 +356,7 @@ const CreateQuotation = ({roleId}) => {
             variant="outlined"
             error={!!errors.Terms}
             helperText={errors.Terms}
-        
+            onChange={(e) => setForm({ ...form, Terms: e.target.value })} 
             slotProps={{
                  style: { textalign: 'right' }, 
             }}
@@ -342,7 +367,7 @@ const CreateQuotation = ({roleId}) => {
             options={options}
             getOptionLabel={(options) => options.label}
             value={selectedOptions}
-             onChange={(event, newValue) => setSelectedOptions(newValue)}
+            onChange={(event, newValue) => setSelectedOptions(newValue)}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -350,6 +375,7 @@ const CreateQuotation = ({roleId}) => {
                 label="VAT"
                 className="vat"
                 name="vat"
+                id="vat"
                 error={!!errors.vat}
                 helperText={errors.vat}
                 sx={{
@@ -371,26 +397,27 @@ const CreateQuotation = ({roleId}) => {
         </Grid>
           <Grid size={6}>
             <TextField
-            className="discount"
-            name="discount"
-            label="Discount"
-            multiline
-            fullWidth 
-            variant="outlined"
-            error={!!errors.discount}
-            helperText={errors.discount}
-            value={form.discount}
-            onChange={(e) => setDiscount(e.target.value)}
-        
-          />
+                  className="discount"
+                  name="discount"
+                  id="discount"
+                  label="Discount"
+                  type="number"
+                  multiline
+                  fullWidth
+                  variant="outlined"
+                  error={!!errors.discount}
+                  helperText={errors.discount}
+                  value={discount}
+                  onChange={handleChange}
+              />
         </Grid>
    
         <Grid size={4}>
-           {roleId !== '32' && (
           <Autocomplete
-            options={endorsers}
-            getOptionLabel={(option) => option?.fullName || `Endorser ${option?.userId}`}
-            value={selectedEndorser}
+            options={users}
+            getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`}
+            value={selectedUser}
+            onChange={(event, newValue) => setForm({ ...form, submittedBy: newValue })} //-> need to declare the state selected user = submittedBy
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -398,6 +425,7 @@ const CreateQuotation = ({roleId}) => {
                 label="Submitted By"
                 className="submittedBy"
                 name="submittedBy"
+                id="submittedBy"
                 error={!!errors.submittedBy}
                 helperText={errors.submittedBy}
                 sx={{
@@ -416,31 +444,31 @@ const CreateQuotation = ({roleId}) => {
               />
             )}
           />
-          )}
-
         </Grid>
         <Grid size={4}>
           {roleId !== '33' && (
-           <Autocomplete
-            options={approvers}
-            getOptionLabel={(option) => option?.fullName || `Approver ${option?.userId}`}
-            value={selectedApprover}
+            <Autocomplete
+            options={endorsers}
+            getOptionLabel={(option) => option?.fullName || `Endorser ${option?.userId}`}
+            value={selectedEndorser}
+            onChange={(event, newValue) => setForm({ ...form, endorser: newValue })} // Updated line
             renderInput={(params) => (
               <TextField
                 {...params}
-                variant="outlined" 
-                label="Select Approver"
-                className="approver"
-                name="approver"
-                error={!!errors.approver}
-                helperText={errors.approver}
+                variant="outlined"
+                label="Select Endorser"
+                className="endorser"
+                name="endorser"
+                id="endorser"
+                error={!!errors.endorser}
+                helperText={errors.endorser}
                 sx={{
                   '& .MuiInput-root': {
                     '& fieldset': {
-                      border: 'none', 
+                      border: 'none',
                     },
                     '&:hover fieldset': {
-                      border: 'none', 
+                      border: 'none',
                     },
                     '&.Mui-focused fieldset': {
                       border: 'none',
@@ -449,7 +477,8 @@ const CreateQuotation = ({roleId}) => {
                 }}
               />
             )}
-          />
+          />  
+
           )}
         </Grid>
              <Grid size={4}>
@@ -458,6 +487,7 @@ const CreateQuotation = ({roleId}) => {
             options={approvers}
             getOptionLabel={(option) => option?.fullName || `Approver ${option?.userId}`}
             value={selectedApprover}
+            onChange={(event, newValue) => setForm({ ...form, approver: newValue })}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -465,6 +495,7 @@ const CreateQuotation = ({roleId}) => {
                 label="Select Approver"
                 className="approver"
                 name="approver"
+                id="approver"
                 error={!!errors.approver}
                 helperText={errors.approver}
                 sx={{
@@ -523,6 +554,7 @@ const CreateQuotation = ({roleId}) => {
                       slotProps={{listbox: { maxheight: 240, overflow: 'auto'},}}
                       value={row.item}
                       isOptionEqualToValue={(o, v) => (o?.itemId ?? o?.ItemId) === (v?.itemId ?? v?.ItemId)}
+                      onChange={(event, newValue) => handleItemFieldChange(idx, 'item', newValue)}
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -530,6 +562,7 @@ const CreateQuotation = ({roleId}) => {
                           label="Select an Item"
                           className="item"
                           name={`item_${idx}`}
+                          id={`item_${idx}`}
                           error={!!rowErrors[idx]?.item}
                           helperText={rowErrors[idx]?.item || ''}
                           sx={{
@@ -556,6 +589,7 @@ const CreateQuotation = ({roleId}) => {
                         variant="outlined"
                         className="unit" 
                         name={`unit_${idx}`}
+                        id={`unit_${idx}`}
                         value={row.unit}
                       />
                     </Tooltip>
@@ -567,7 +601,8 @@ const CreateQuotation = ({roleId}) => {
                       type="number" 
                       className="qty" 
                       name={`qty_${idx}`}
-                      onChange={(e) => setQty(e.target.value)}
+                      id={`qty_${idx}`}
+                      onChange={(e) => handleItemFieldChange(idx, 'qty', e.target.value)}
                       value={row.qty}
                       error={!!rowErrors[idx]?.qty}
                       helperText={rowErrors[idx]?.qty || ''}
@@ -580,7 +615,8 @@ const CreateQuotation = ({roleId}) => {
                         type="number" 
                         className="unitCost" 
                         name={`unitCost_${idx}`}
-                        onChange={(e) => setUnitCost(e.target.value)}
+                        id={`unitCost_${idx}`}
+                        onChange={(e) => handleItemFieldChange(idx, 'unitCost', e.target.value)}
                         value={row.unitCost}
                         error={!!rowErrors[idx]?.unitCost}
                         helperText={rowErrors[idx]?.unitCost || ''}
@@ -593,7 +629,8 @@ const CreateQuotation = ({roleId}) => {
                         type="number"  
                         className="markup" 
                         name={`inputMarkup_${idx}`}
-                        onChange={(e) => setMarkup(e.target.value)}
+                        id={`inputMarkup_${idx}`}
+                        onChange={(e) => handleItemFieldChange(idx, 'markup', e.target.value)}
                         value={row.markup}
                         error={!!rowErrors[idx]?.markup}
                         helperText={rowErrors[idx]?.markup || ''}
@@ -606,6 +643,7 @@ const CreateQuotation = ({roleId}) => {
                         type="number"  
                         className="totalCost" 
                         name={`totalCost_${idx}`}
+                        id={`totalCost_${idx}`}
                         slotProps={{input: { readOnly: true },}}
                         value={row.totalCost}
                         error={!!rowErrors[idx]?.totalCost}
@@ -623,7 +661,9 @@ const CreateQuotation = ({roleId}) => {
                       variant="outlined"
                       className="itemDescription"
                       name={`itemDescription_${idx}`}
+                      ide={`itemDescription_${idx}`}
                       value={row.itemDescription}
+                      onChange={(e) => handleItemFieldChange(idx, 'itemDescription', e.target.value)}
                       error={!!rowErrors[idx]?.itemDescription}
                       helperText={rowErrors[idx]?.itemDescription || ''}
                     />
@@ -634,22 +674,16 @@ const CreateQuotation = ({roleId}) => {
           </TableBody>
           <TableFooter>
             <TableRow>
-              <TableCell></TableCell>
-              <TableCell></TableCell>
-              <TableCell></TableCell>
-              <TableCell></TableCell>
+              <TableCell colSpan={4}></TableCell>
                 <TableCell>
-                <Typography fontWeight="bold" align="right">	Over ALl Total: </Typography>
+                <Typography fontWeight="bold" align="right">	Overall Total: </Typography>
               </TableCell>
               <TableCell >
                 <Typography fontWeight="bold" align="right">₱ {overallTotal.toFixed(2)} </Typography>
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell></TableCell>
-              <TableCell></TableCell>
-              <TableCell></TableCell>
-              <TableCell></TableCell>
+              <TableCell colSpan={4}></TableCell>
                 <TableCell>
                 <Typography fontWeight="bold" align="right">	Grand Total (VAT Inclusive): </Typography>
               </TableCell>

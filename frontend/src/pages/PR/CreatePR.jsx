@@ -979,8 +979,7 @@ const CreatePR = ({roleId}) => {
           </TableBody>
           <TableFooter>
             <TableRow>
-              <TableCell></TableCell>
-              <TableCell></TableCell>
+              <TableCell colSpan={2}></TableCell>
               <TableCell>
                 <Typography fontWeight="bold">Overall Total:</Typography>
               </TableCell>

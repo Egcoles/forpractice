@@ -15,7 +15,13 @@ dist-ssr
 .public
 .appsettings.json
 .appsettings.Development
-.task.txt
+.eslintrc.json
+.vite.config.js
+package-lock.json
+index.html
+yarn.lock
+eslint.config.js
+package.json
 .vscode/settings.json
 *.vscodeignore
 # Editor directories and files

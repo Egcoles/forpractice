@@ -9,7 +9,7 @@ import CreateUser from "./pages/maintenance/CreateUser";
 import Role from "./pages/maintenance/role";
 import PurchaseRequisition from "./pages/PurchaseRequisition";
 import Quotation from "./pages/Quotation";
-import CreatePR from "./pages/pr/CreatePR";
+import CreatePR from "./pages/PR/createPR";
 import CreateQuotation from "./pages/Quotation/createQuotation";
 import Department from "./pages/maintenance/department";
 import RequireAuth from "./auths/authentication";

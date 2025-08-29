@@ -1,0 +1,16 @@
+# Ignore .NET specific files
+bin/
+obj/
+
+# .NET configuration files (unless you need to share them)
+appsettings.json
+appsettings.Development.json
+
+# Project files
+Properties/
+TodoApi.csproj
+TodoApi.sln
+
+# Ignore directories and files that are generated or temporary
+Data/
+TodoApi.http
