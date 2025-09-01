@@ -1,14 +1,13 @@
-import React, { use, useState } from "react";
-import { useMutation, useQueryClient} from "@tanstack/react-query";
-import api from "../../api";
-import { useUsers, useItems, useSuppliers } from "../../hooks/useUsers";
+import React, { useState } from "react";
+import { useQueryClient} from "@tanstack/react-query";
+import { useUsers, useItems } from "../../hooks/useUsers";
+import { useCompanyList, useLocationList, useCompanyAddress } from "../../hooks/useQuotations";
 import {useEndorsers} from "../../hooks/useEndorsers";
 import { useApprovers } from "../../hooks/useApprovers";
-import {FormControl, Select, Box,Button,TextField,Typography,Autocomplete,Grid,Divider,Paper,Stack,Table,TableBody,TableCell,TableContainer,TableFooter,TableHead,TableRow,Tooltip,} from "@mui/material";
+import {Box,Button,TextField,Typography,Autocomplete,Grid,Divider,Paper,Stack,Table,TableBody,TableCell,TableContainer,TableFooter,TableHead,TableRow,Tooltip,} from "@mui/material";
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { Add as AddIcon,Remove as RemoveIcon, Preview as PreviewIcon, Send as SendIcon} from "@mui/icons-material";
-import dayjs from 'dayjs'; 
 
 const CreateQuotation = ({roleId}) => {
   const queryClient = useQueryClient();
@@ -29,6 +28,8 @@ const CreateQuotation = ({roleId}) => {
     endorser: "",
     qty: "",
     unitCost: "",
+    item: "",
+    itemDescription: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -36,11 +37,16 @@ const CreateQuotation = ({roleId}) => {
   const {data: users = [], isLoading, isError} = useUsers();
   const selectedUser = form.submittedBy || null;
   const {data: approvers = [], isAppLoading, isAppError} = useApprovers();
-  const selectedApprover = form.approver || null;
+  const selectedApprover = form.approver || (approvers[0]) || null;
   const {data: endorsers = [], isEndoLoading, isEndoError} = useEndorsers();
-  const selectedEndorser = form.endorser || null;
+  const selectedEndorser = form.endorser ||(endorsers[0]) || null;
   const {data: particulars = [], isItemLoading, isItemError} = useItems();
-
+  const {data: companies = [], isCompanyLoading, isCompanyError} = useCompanyList();
+  const selectedCompany = form.companyName || null;
+  const {data: locations = [], isLocationLoading, isLocationError} = useLocationList(selectedCompany?.companyID);
+  const selectedLocation = form.location || null;
+  const {data: addresses = [],isAddressLoading, isAddressError} = useCompanyAddress(selectedLocation?.locationID);
+ 
 
   // Dynamic line items
   const initialItem = () => ({
@@ -70,6 +76,7 @@ const CreateQuotation = ({roleId}) => {
   const [markup, setMarkup] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState(null);
+
   const calculatePerRowCost = (row) => {
       const qty = parseFloat(row.qty) || 0;
       const unitCost = parseFloat(row.unitCost) || 0;
@@ -115,22 +122,43 @@ const CreateQuotation = ({roleId}) => {
   const {overallTotal, grandTotal} = calculateTotalCost();
 
   const handleItemFieldChange = (index, field, value) => {
+      // Update items state
       setItems((prev) => {
           const next = [...prev];
           const row = {...next[index], [field]: value};
+          
+          // Calculate total if applicable
           if (['qty', 'unitCost', 'markup'].includes(field)) {
               const totals = calculatePerRowCost(row);
               row.totalCost = totals.totalCost;
           }
-          next[index]= row;
+
+          next[index] = row;
           return next;
       });
-      if (['qty', 'unitCost', 'markup'].includes(field)) {
+
+      // Clear error for itemDescription field immediately on change
+      if (field === 'itemDescription') {
+          setRowErrors((prevErrors) => {
+              const nextErrors = [...prevErrors];
+              nextErrors[index] = {...nextErrors[index], itemDescription: ''}; // Clear the description error
+              return nextErrors;
+          });
+      }
+      else if (field === 'item') {
+          // Clear error for item field as before
+          setRowErrors((prevErrors) => {
+              const nextErrors = [...prevErrors];
+              nextErrors[index] = {...nextErrors[index], item: ''}; // Clear the item error
+              return nextErrors;
+          });
+      } 
+      else if (['qty', 'unitCost', 'markup'].includes(field)) {
           setRowErrors((prevErrors) => {
               const nextErrors = [...prevErrors];
               const num = parseFloat(value);
-              if (value === '' || value === null || isNaN(num)) {
-                  nextErrors[index] = {...nextErrors[index], [field]: ''};
+              if (value === '' || isNaN(num)) {
+                  nextErrors[index] = {...nextErrors[index], [field]: 'This field is required.'};
               } else if (num <= 0) {
                   nextErrors[index] = {...nextErrors[index], [field]: "Please input number greater than zero"};
               } else {
@@ -139,86 +167,66 @@ const CreateQuotation = ({roleId}) => {
               return nextErrors;
           });
       }
+
       setCanSubmit(false);
   };
 
 
 
-const handleChange = (e) => {
-    const discount = e.target.value;
-    const numericValue = parseFloat(value); 
-    if (value === '' || (numericValue > 0 && !isNaN(numericValue))) {
-        setDiscount(numericValue);
-    }
+const validateRow = (row) => {
+    const errors = {};
+    const message = "Please fill in the required fields.";
+    if (!row.item) errors.item = message;
+    if (!row.itemDescription) errors.itemDescription = message;
+    if (!row.qty) errors.qty = message;
+    if (!row.unitCost) errors.unitCost = message;
+    return errors;
 };
 
+const addItemRow = () => {
+    const errors = items.map(row => validateRow(row));
+    setRowErrors(errors);
 
-  const openSnackbar = (message, severity = 'warning') => setSnackbar({ open: true, message, severity });
+    if (errors.some(error => Object.keys(error).length > 0)) {
+        openSnackbar('Please fill all required fields before adding a new row.');
+        return; 
+    }
 
-  // const validateRow = (row) => {
-  //   const re = {};
-  //   const q = parseFloat(row.qty) || 0;
-  //   const u = parseFloat(row.unitCost) || 0;
-  //   const m = parseFloat(row.markup) || 0;
-  //   const errorMessage = 'Please input the required field.';
-  //   const errorNumber = 'Please input the number greater than zero.';
-  //   if (!row.item || (row.item?.itemId ?? row.item?.ItemId)) re.item = errorMessage;
-  //   if (!row.itemDescription) re.itemDescription = errorMessage;
-  //   if (!q  || q <= 0) re.qty = errorNumber;
-  //   if (!u  || u <= 0) re.unitCost = errorNumber;
-  //   if (!m  || m <= 0) re.markup = errorNumber;
-  //   return re;
-  // };
-
-  // //this function to validate if has duplicate item not being selected again
-  // const ValidateRows = () => {
-  //   const errs = items.map(validateRow);
-  //   let duplicateFound = false;
-  //   for (let i = 0; i < items.length; i++) {
-  //     const row = items[i];
-  //     const itemKey = row.item?.itemId ?? row.item?.ItemId;
-  //     if (!itemKey) continue;
-   
-  //   }
-  // }
-
-//  const canAddNewRow = () => {
-//     let valid = true;
-//     const warningMessage = "This is a required field.";
-
-//     // Validate for required values in the form
-//     const hasInput = Boolean(form.qty || form.unitCost);
-//     if (!hasInput) {
-//         setErrors({ qty: warningMessage, unitCost: warningMessage });
-//         valid = false;
-//     }
-
-//     // Validate each row
-//     const rowsOk = items.every((item) => Object.keys(validateRow(item)).length === 0);
-//     valid = valid && rowsOk;
-//     if (!valid) {
-//         openSnackbar("Please complete the required fields before adding a new row.");
-//         return false;
-//     }
-
-//     return true;
-// };
-
-
-
-  const additemRow = () => {
-    // if(!canAddNewRow()) return;
     const newRow = initialItem();
     newRow.isPrimary = false;
-    setItems((prev) => [...prev, newRow]);
+    setItems(prev => [...prev, newRow]);
     setRowErrors((prev) => [...prev, {}]);
-  };
+};
+
+const openSnackbar = (message, severity = 'warning') => {
+    setSnackbar({ open: true, message, severity });
+};
 
   const removeItemRow = () => {
     setItems ((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
     setRowErrors((prev) => (prev.length > 1 ? prev.slice(0, -1): prev));
   };
  
+ const handlePreview = () => {
+    const errors = {};
+    const errorMessage = "Please input the required field.";
+
+    // Validate each required field
+    if (!form.clientName) errors.clientName = errorMessage;
+    if (!form.ProjectName) errors.ProjectName = errorMessage;
+    if (!form.companyName) errors.companyName = errorMessage;
+    if (!form.location) errors.location = errorMessage;
+    if (!form.submittedBy) errors.submittedBy = errorMessage;
+
+    if (Object.keys(errors).length > 0) {
+        setErrors(errors); // Update your errors state 
+        openSnackbar("Please complete the required fields before previewing.");
+        return;
+    }
+    //clear errors if field has value || not empty
+     setErrors({});
+};
+
 
   return (
     <Box sx={{
@@ -242,7 +250,13 @@ const handleChange = (e) => {
             error={!!errors.clientName}
             helperText={errors.clientName}
             value={form.clientName}
-            onChange={(e) => setForm({ ...form, clientName: e.target.value })}
+            onChange={(e) => {
+                setForm({ ...form, clientName: e.target.value });
+                // Clear error for this field if it has content
+                if (e.target.value) {
+                    setErrors(prev => ({ ...prev, clientName: '' }));
+                }
+            }}
           />
         </Grid>
          <Grid size={6}>
@@ -257,89 +271,129 @@ const handleChange = (e) => {
             error={!!errors.ProjectName}
             helperText={errors.ProjectName}
             value={form.ProjectName}
-            onChange={(e) => setForm({ ...form, ProjectName: e.target.value })}
+            onChange={(e) => {
+                setForm({ ...form, ProjectName: e.target.value });
+                // Clear error for this field if it has content
+                if (e.target.value) {
+                    setErrors(prev => ({ ...prev, ProjectName: '' }));
+                }
+            }}
           />
         </Grid>
         <Grid size={4}>
-         <Autocomplete
-            options={users}
-            getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`} // must change into company options
-            value={selectedUser}
-            onChange={(event, newValue) => setForm({ ...form, companyName: newValue })} //-> need to declare the state selected company = company
-            renderInput={(params) => (
+        <Autocomplete
+          options={companies}
+          getOptionLabel={(option) => option?.companyName || `CompanyName ${option?.companyID}`} 
+          value={selectedCompany}
+          onChange={(event, newValue) => {
+              console.log(newValue?.companyID); // console log to check selected company ID
+              setForm({ ...form, companyName: newValue });
+              if (newValue) {
+                  setErrors(prev => ({ ...prev, companyName: '' }));
+              }
+          }} 
+          renderInput={(params) => (
               <TextField
-                {...params}
-                variant="outlined" 
-                label="Comapany Name"
-                className="companyName"
-                name="companyName"
-                id="companyName"
-                error={!!errors.companyName}
-                helperText={errors.companyName}
-                sx={{
-                  '& .MuiInput-root': {
-                    '& fieldset': {
-                      border: 'none', 
-                    },
-                    '&:hover fieldset': {
-                      border: 'none', 
-                    },
-                    '&.Mui-focused fieldset': {
-                      border: 'none',
-                    },
-                  },
-                }}
+                  {...params}
+                  variant="outlined" 
+                  label="Company Name"
+                  className="companyName"
+                  name="companyName"
+                  id="companyName"
+                  error={!!errors.companyName}
+                  helperText={errors.companyName}
+                  sx={{
+                      '& .MuiInput-root': {
+                          '& fieldset': {
+                              border: 'none', 
+                          },
+                          '&:hover fieldset': {
+                              border: 'none', 
+                          },
+                          '&.Mui-focused fieldset': {
+                              border: 'none',
+                          },
+                      },
+                  }}
               />
-            )}
-          />
+          )}
+      /> 
+
         </Grid>
          <Grid size={4}>
-         <Autocomplete
-            options={users}
-            getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`} // must change into company options
-            value={selectedUser}
-            onChange={(event, newValue) => setForm({ ...form, location: newValue })} //-> need to declare the state selected location = location
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                variant="outlined" 
-                label="Location"
-                className="location"
-                name="location"
-                id="location"
-                error={!!errors.location}
-                helperText={errors.location}
-                sx={{
-                  '& .MuiInput-root': {
-                    '& fieldset': {
-                      border: 'none', 
-                    },
-                    '&:hover fieldset': {
-                      border: 'none', 
-                    },
-                    '&.Mui-focused fieldset': {
-                      border: 'none',
-                    },
-                  },
+           {selectedCompany ? (
+            <Autocomplete
+                options={locations }
+                getOptionLabel={(option) => option?.locationName || `Location ${option?.locationID }`}
+                value={selectedLocation}
+                onChange={(event, newValue) => {
+                  console.log(newValue?.locationID ); // console log to check selected location ID
+                    setForm({ ...form, location: newValue});
+                    if (newValue) {
+                        setErrors(prev => ({ ...prev, location: '' }));
+                    }
                 }}
-              />
-            )}
-          />
+                disabled={!selectedCompany} 
+                renderInput={(params) => (
+                  <Tooltip title={errors.location || ""} arrow open={!!errors.location}>
+                    <TextField
+                        {...params}
+                        variant="outlined"
+                        label="Location"
+                        className="location"
+                        name="location"
+                        id="location"
+                        error={!!errors.location}
+                        helperText={errors.location}
+                        sx={{
+                            '& .MuiInput-root': {
+                                '& fieldset': {
+                                    border: 'none',
+                                },
+                                '&:hover fieldset': {
+                                    border: 'none',
+                                },
+                                '&.Mui-focused fieldset': {
+                                    border: 'none',
+                                },
+                            },
+                        }}
+                    />
+                  </Tooltip>
+                )}
+            />
+        ) : (
+           <Tooltip title="Please select a company to enable this field" arrow>
+                <span style={{ display: 'inline-block', width: '100%' }}>
+                    <TextField
+                        variant="outlined"
+                        label="Location"
+                        disabled
+                        fullWidth
+                    />
+                </span>
+            </Tooltip>
+        )}
+   
+         
         </Grid>
             <Grid size={4}>
-            <TextField
-            className="CompanyAddress"
-            name="CompanyAddress"
-            id="CompanyAddress"
-            label="Company Address"
-            multiline
-            fullWidth 
-            variant="outlined"
-            error={!!errors.CompanyAddress}
-            helperText={errors.CompanyAddress}
-            value={form.CompanyAddress}
-            onChange={(e) => setForm({ ...form, CompanyAddress: e.target.value })}
-          />
+            <Tooltip title="This field is read-only" arrow>
+              <TextField
+              className="CompanyAddress"
+              name="CompanyAddress"
+              id="CompanyAddress"
+              label="Company Address"
+              multiline
+              fullWidth 
+              variant="outlined"
+              error={!!errors.CompanyAddress}
+              helperText={errors.CompanyAddress}
+              value={form.CompanyAddress}
+             slotProps={{input: { readOnly: true },}}
+            />
+            </Tooltip>
+           
         </Grid>
         <Grid size={12}>
             <TextField
@@ -397,27 +451,38 @@ const handleChange = (e) => {
         </Grid>
           <Grid size={6}>
             <TextField
-                  className="discount"
-                  name="discount"
-                  id="discount"
-                  label="Discount"
-                  type="number"
-                  multiline
-                  fullWidth
-                  variant="outlined"
-                  error={!!errors.discount}
-                  helperText={errors.discount}
-                  value={discount}
-                  onChange={handleChange}
-              />
+            className="discount"
+            name="discount"
+            id="discount"
+            label="Discount"
+            type="number"
+            fullWidth
+            variant="outlined"
+            error={!!errors.discount}
+            helperText={errors.discount}
+            value={discount}
+            onChange={(e) => {
+                const value = e.target.value;
+                setDiscount(value);
+                if (value === "0" || value === "") {
+                    setErrors({ discount: "Please input number greater than zero" });
+                } else {
+                    setErrors({ discount: null });
+                }
+            }}
+          />
         </Grid>
-   
         <Grid size={4}>
-          <Autocomplete
+          <Autocomplete //-> need to declare the state selected user = submittedBy
             options={users}
             getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`}
             value={selectedUser}
-            onChange={(event, newValue) => setForm({ ...form, submittedBy: newValue })} //-> need to declare the state selected user = submittedBy
+            onChange={(event, newValue) => {
+                setForm({ ...form, submittedBy: newValue });
+                if (newValue) {
+                    setErrors(prev => ({ ...prev, submittedBy: '' }));
+                }
+            }}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -451,7 +516,10 @@ const handleChange = (e) => {
             options={endorsers}
             getOptionLabel={(option) => option?.fullName || `Endorser ${option?.userId}`}
             value={selectedEndorser}
-            onChange={(event, newValue) => setForm({ ...form, endorser: newValue })} // Updated line
+               onChange={(event, newValue) => {
+                selectedEndorser(newValue);
+                setForm({ ...form, endorser: newValue });
+            }}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -487,7 +555,10 @@ const handleChange = (e) => {
             options={approvers}
             getOptionLabel={(option) => option?.fullName || `Approver ${option?.userId}`}
             value={selectedApprover}
-            onChange={(event, newValue) => setForm({ ...form, approver: newValue })}
+            onChange={(event, newValue) => {
+              setSelectedApprover(newValue);
+              setForm({ ...form, approver: newValue });
+            }}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -519,7 +590,7 @@ const handleChange = (e) => {
         
       </Grid>
       <Stack direction="row" spacing={2} mt={2} mb={2}> 
-        <Button variant="contained" onClick={additemRow} ><AddIcon/></Button>
+        <Button variant="contained" onClick={addItemRow} ><AddIcon/></Button>
         <Button variant="outlined" color="error" onClick={removeItemRow} disabled={items.length === 1}><RemoveIcon/></Button>
       </Stack>
       <TableContainer component={Paper}>
@@ -698,7 +769,7 @@ const handleChange = (e) => {
       <Stack direction="row" spacing={2} mt={2} mb={2}
        sx={{ display: 'flex', justifyContent: 'flex-end' }}
        > 
-        <Button variant="outlined" startIcon={<PreviewIcon/>}>
+        <Button variant="outlined" startIcon={<PreviewIcon/>} onClick={handlePreview}>
            Preview
         </Button>
         <Button variant="contained" type="submit" endIcon={<SendIcon />} disabled={!canSubmit}>
