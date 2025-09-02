@@ -1,4 +1,110 @@
+CONDITIONS ON SELECTING COMPANY NAME 
+DISBALES LOCATION 
+READ ONLY COMPANY ADDRESS
 
+ENABLE LOCATION IF ALREADY SELECT COMPANY
+LOCATION CHOICES WILL DEPENDS ON SELECTED COMPANY NAME
+COPMANY ID WILL BE PASS AS PARAMETER TO GET THE LIST OF LOCATIONS
+
+AUTOMICAL FILL COMPANY ADDRESS
+BASED ON SELECTED LOCATION
+LOCATION ID WILL BE PASS AS PARAMETER TO GET THE EXACT ADDRESS 
+
+
+disbleb
+
+
+
+
+===================================
+VALIDATIONS
+-cannot add new row if item,desc,qty,unitcost are empty
+- duplicate item
+
+On preview
+-validate all required fields
+--client name
+--project name
+--company name
+--location
+--address
+--vat
+submittedby
+endorser
+approver
+each row must no empty
+
+On submit
+-enable only after preview
+
+create 
+table for company 
+
+FUNCTIONALITY
++Select Company
+=render list of location for that company
++select location
+=automaticaly fill in the company address
+
++Select Item
+= automatically fill in the item desc
+= also unit is automically fill in
++Item desc is editable
+
+*VALIDATIONS ON INPUTS*
++Input Quantity
+= allow only greather than 0 
++On submit do not allow QTY == 0
+
++Input UnitCost 
+= allow only positive numbers
+
++Input Markup
+= allow only whole numbers
+= greather than 0
++ on submit do not allow 0
+
++Item already selected on that row 
+= if item already selected previous row 
+return = 'This item already added. Please review your input '
++Total Cost is read only
+
+**COMPUTATIONS**
+PerRowComputation
+Total cost = qty * unitcost
+Over all total = qty * unitcost
+grand total = qty * unitcost
+if has markup {
+  new total cost = total cost * markup%  
+  new over all total = over all total * markup% 
+  new grand total = grand total * markup% 
+}
+if has discount {
+  new over all total = over all total - discount% 
+  new grand total = grand total - discount%
+}
+if has VAT {
+  new grand total = grand total * 1.12 vat
+}
+
+OverAllComputation
+overall total = perRowtotalcost ++
+grandtotal = perRowtotalcost ++
+
+
+pag kuha ng discount ay
+qty * unit cost = total cost
+total cost * discount = less 
+total - less = new total cost
+
+pag kuha ng markup ay
+qty * unit cost = total cost
+total * cost + markup = increase price
+total cost + increase price = new total cost
+
+
+
+=======================================
 QUOTATION TABLE
 -Control No
 - Project Name

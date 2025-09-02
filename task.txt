@@ -1,3 +1,65 @@
+/****** Script for SelectTopNRows command from SSMS  ******/
+SELECT TOP 1000 [id]
+      ,[ReferenceNo]
+      ,[ControlNo]
+      ,[clientName]
+      ,[ProjectName]
+      ,[ComapanyName]
+      ,[Location]
+      ,[Terms]
+      ,[VAT]
+      ,[Discount]
+      ,[SubmittedBy]
+      ,[Endorser]
+      ,[Appover]
+      ,[createdDate]
+  FROM [PRO_USER].[dbo].[QUOTATION]
+
+
+
+
+
+
+/****** Script for SelectTopNRows command from SSMS  ******/
+SELECT TOP 1000 [id]
+      ,[QuotationID]
+      ,[item]
+      ,[description]
+      ,[qty]
+      ,[unitCost]
+      ,[markup]
+      ,[totalCost]
+      ,[OverallTotal]
+      ,[GrandTotalVAT]
+      ,[CreatedDate]
+  FROM [PRO_USER].[dbo].[QUOTATION_GRID]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 DATABASE SCHEMA
 PR TABLE
 PRID
@@ -51,18 +113,6 @@ ID | ITEMID | SUPPLIERID | PRICE | TOTAL
 002 | 4     | 15         |  30   | 20
 003 | 3     | 18         |  40   | 30
 ============================================================================================
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 CASES & Conditions FOR ADDING ROW

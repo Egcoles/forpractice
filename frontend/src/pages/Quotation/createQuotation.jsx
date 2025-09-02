@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { useQueryClient} from "@tanstack/react-query";
+import { useMutation, useQueryClient} from "@tanstack/react-query";
+import api from "../../api";
 import { useUsers, useItems } from "../../hooks/useUsers";
-import { useCompanyList, useLocationList, useCompanyAddress } from "../../hooks/useQuotations";
+import { useCompanyList, useLocationList} from "../../hooks/useQuotations";
 import {useEndorsers} from "../../hooks/useEndorsers";
 import { useApprovers } from "../../hooks/useApprovers";
 import {Box,Button,TextField,Typography,Autocomplete,Grid,Divider,Paper,Stack,Table,TableBody,TableCell,TableContainer,TableFooter,TableHead,TableRow,Tooltip,} from "@mui/material";
@@ -39,15 +40,46 @@ const CreateQuotation = ({roleId}) => {
   const {data: approvers = [], isAppLoading, isAppError} = useApprovers();
   const selectedApprover = form.approver || (approvers[0]) || null;
   const {data: endorsers = [], isEndoLoading, isEndoError} = useEndorsers();
-  const selectedEndorser = form.endorser ||(endorsers[0]) || null;
+  const selectedEndorser = form.endorser ||(endorsers[1]) || null;
   const {data: particulars = [], isItemLoading, isItemError} = useItems();
   const {data: companies = [], isCompanyLoading, isCompanyError} = useCompanyList();
   const selectedCompany = form.companyName || null;
   const {data: locations = [], isLocationLoading, isLocationError} = useLocationList(selectedCompany?.companyID);
   const selectedLocation = form.location || null;
-  const {data: addresses = [],isAddressLoading, isAddressError} = useCompanyAddress(selectedLocation?.locationID);
- 
 
+  const createQuotation = useMutation ({
+    mutationFn:(newQuotation) => api.post("Quotation/create", newQuotation, { withCredentials: true }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["quotations"]);
+      setSnackbar({ open: true, message: "Quotation created successfully", severity: "success" });
+      setForm({
+        clientName: "",
+        ProjectName: "",
+        companyName: "",
+        location: "",
+        CompanyAddress: "",
+        Terms: `
+          1. Price is in Philippine Peso and VAT INCLUSIVE
+          2. Delivery:
+          3. Payment:
+          4. Warranty:
+          5. Price Validity:`,
+        submittedBy: "",
+        approver: "",
+        endorser: "",
+        qty: "",
+        unitCost: "",
+        item: "",
+        itemDescription: "",
+      })
+         setItems([{ ...initialItem(), isPrimary: true }]);
+      setRowErrors([{}]);
+      setErrors({});
+    },
+    onError: (error) => {
+      setSnackbar({ open: true, message: error.message, severity: "error" });
+    }
+  })
   // Dynamic line items
   const initialItem = () => ({
     id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
@@ -202,12 +234,14 @@ const openSnackbar = (message, severity = 'warning') => {
     setSnackbar({ open: true, message, severity });
 };
 
-  const removeItemRow = () => {
-    setItems ((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
-    setRowErrors((prev) => (prev.length > 1 ? prev.slice(0, -1): prev));
-  };
+const removeItemRow = () => {
+  setItems ((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
+  setRowErrors((prev) => (prev.length > 1 ? prev.slice(0, -1): prev));
+};
  
  const handlePreview = () => {
+    const itemErrors = items.map(row => validateRow(row));
+    setRowErrors(itemErrors);
     const errors = {};
     const errorMessage = "Please input the required field.";
 
@@ -225,7 +259,45 @@ const openSnackbar = (message, severity = 'warning') => {
     }
     //clear errors if field has value || not empty
      setErrors({});
+     alert('All data is valid. Check console for preview.');
+     console.log("Validated Data:", form, items);
+     setCanSubmit(true);
+
 };
+
+const handleSubmit = async (e) => {
+    e.preventDefault();
+    const itemsPayload = items.map(item => ({
+        ItemID: item.item?.itemId || item.item?.ItemId || null,
+        ItemDescription: item.itemDescription || '',
+        Quantity: parseInt(item.qty, 10) || 0,
+        UnitCost: parseFloat(item.unitCost) || 0.0,
+        Markup: parseInt(item.markup, 10) || 0,
+        TotalCost: parseFloat(item.totalCost) || 0.0
+    }));
+
+    const payload = {
+        ClientName: form.clientName,
+        ProjectName: form.ProjectName,
+        CompanyID: form.companyName.companyID,
+        LocationID: form.location.locationID,
+        CompanyAddress: form.CompanyAddress,
+        Terms: form.Terms,
+        Endorser: form.endorser || 0,
+        Approver: form.approver || 0,
+        SubmittedBy: form.submittedBy.userId || 0,
+        Discount: discount || 0,
+       VAT: selectedOptions ? selectedOptions.label : null,
+        OverAllTotal: overallTotal || 0,
+        GrandTotalVat: grandTotal || 0,
+        Items: itemsPayload
+    };
+
+    console.log('Final Payload:', payload);
+
+    createQuotation.mutate(payload);
+};
+
 
 
   return (
@@ -236,7 +308,7 @@ const openSnackbar = (message, severity = 'warning') => {
         Quotation
       </Typography>
       <Divider sx={{ my: 2, borderColor: 'primary.main' }} />
-    <form noValidate>
+    <form onSubmit={handleSubmit}  noValidate>
       <Grid container alignItems="center" justifyContent="center" spacing={2}>
         <Grid size={6}>
             <TextField
@@ -252,7 +324,6 @@ const openSnackbar = (message, severity = 'warning') => {
             value={form.clientName}
             onChange={(e) => {
                 setForm({ ...form, clientName: e.target.value });
-                // Clear error for this field if it has content
                 if (e.target.value) {
                     setErrors(prev => ({ ...prev, clientName: '' }));
                 }
@@ -273,7 +344,6 @@ const openSnackbar = (message, severity = 'warning') => {
             value={form.ProjectName}
             onChange={(e) => {
                 setForm({ ...form, ProjectName: e.target.value });
-                // Clear error for this field if it has content
                 if (e.target.value) {
                     setErrors(prev => ({ ...prev, ProjectName: '' }));
                 }
@@ -286,7 +356,7 @@ const openSnackbar = (message, severity = 'warning') => {
           getOptionLabel={(option) => option?.companyName || `CompanyName ${option?.companyID}`} 
           value={selectedCompany}
           onChange={(event, newValue) => {
-              console.log(newValue?.companyID); // console log to check selected company ID
+              console.log(newValue?.companyID); 
               setForm({ ...form, companyName: newValue });
               if (newValue) {
                   setErrors(prev => ({ ...prev, companyName: '' }));
@@ -317,7 +387,7 @@ const openSnackbar = (message, severity = 'warning') => {
                   }}
               />
           )}
-      /> 
+        /> 
 
         </Grid>
          <Grid size={4}>
@@ -327,9 +397,16 @@ const openSnackbar = (message, severity = 'warning') => {
                 getOptionLabel={(option) => option?.locationName || `Location ${option?.locationID }`}
                 value={selectedLocation}
                 onChange={(event, newValue) => {
-                  console.log(newValue?.locationID ); // console log to check selected location ID
-                    setForm({ ...form, location: newValue});
+                  console.log(newValue?.locationID); 
+                    setForm(prev => ({ ...prev, location: newValue }));
                     if (newValue) {
+                        const addressData = locations.find(location => location.locationID === newValue.locationID);
+                        if (addressData) {
+                            setForm(prev => ({ ...prev, CompanyAddress: addressData.address }));
+                        } else {
+                            setForm(prev => ({ ...prev, CompanyAddress: '' }));
+                        }
+                        console.log(form); 
                         setErrors(prev => ({ ...prev, location: '' }));
                     }
                 }}
@@ -374,8 +451,6 @@ const openSnackbar = (message, severity = 'warning') => {
                 </span>
             </Tooltip>
         )}
-   
-         
         </Grid>
             <Grid size={4}>
             <Tooltip title="This field is read-only" arrow>
@@ -389,9 +464,9 @@ const openSnackbar = (message, severity = 'warning') => {
               variant="outlined"
               error={!!errors.CompanyAddress}
               helperText={errors.CompanyAddress}
-              value={form.CompanyAddress}
-             slotProps={{input: { readOnly: true },}}
-            />
+              value={form.CompanyAddress} 
+              slotProps={{input: { readOnly: true },}}
+              />
             </Tooltip>
            
         </Grid>
@@ -473,7 +548,7 @@ const openSnackbar = (message, severity = 'warning') => {
           />
         </Grid>
         <Grid size={4}>
-          <Autocomplete //-> need to declare the state selected user = submittedBy
+          <Autocomplete 
             options={users}
             getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`}
             value={selectedUser}
@@ -516,9 +591,11 @@ const openSnackbar = (message, severity = 'warning') => {
             options={endorsers}
             getOptionLabel={(option) => option?.fullName || `Endorser ${option?.userId}`}
             value={selectedEndorser}
-               onChange={(event, newValue) => {
-                selectedEndorser(newValue);
+              onChange={(event, newValue) => {
                 setForm({ ...form, endorser: newValue });
+                if (newValue) {
+                    setErrors(prev => ({ ...prev, endorser: '' }));
+                }
             }}
             renderInput={(params) => (
               <TextField
@@ -549,15 +626,17 @@ const openSnackbar = (message, severity = 'warning') => {
 
           )}
         </Grid>
-             <Grid size={4}>
+        <Grid size={4}>
           {roleId !== '33' && (
            <Autocomplete
             options={approvers}
             getOptionLabel={(option) => option?.fullName || `Approver ${option?.userId}`}
             value={selectedApprover}
-            onChange={(event, newValue) => {
-              setSelectedApprover(newValue);
-              setForm({ ...form, approver: newValue });
+              onChange={(event, newValue) => {
+                setForm({ ...form, approver: newValue });
+                if (newValue) {
+                    setErrors(prev => ({ ...prev, approver: '' }));
+                }
             }}
             renderInput={(params) => (
               <TextField

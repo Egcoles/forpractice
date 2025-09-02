@@ -38,7 +38,7 @@ const CreateQuotation = ({roleId}) => {
   const selectedEndorser = form.endorser || null;
   const {data: particulars = [], isItemLoading, isItemError} = useItems();
 
-
+const filteredLocations = locations.filter(location => location.companyID === selectedCompany?.companyID);
   // Dynamic line items
   const initialItem = () => ({
     id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`,

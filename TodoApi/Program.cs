@@ -18,7 +18,7 @@ builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IPRRepository, PRRepository>();
-
+builder.Services.AddScoped<IQuotationRepository, QuotationRepository>();
 
 // Load JWT settings from appsettings.json
 var jwtSettings = builder.Configuration.GetSection("Jwt");
