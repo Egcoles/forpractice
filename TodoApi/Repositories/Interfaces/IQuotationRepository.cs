@@ -7,6 +7,7 @@ namespace TodoApi.Repositories.Interfaces
     {
         Task<IEnumerable<CompanyModel>> GetCompanyListAsync();
         Task<IEnumerable<LocationModel>> GetLocationListAsync(int companyId);
+        Task<IEnumerable<QuotationModel>> GetTableDataAsync();
         Task InsertAsync(QuotationModel quotation);
     }
 

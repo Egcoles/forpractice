@@ -77,6 +77,8 @@ namespace TodoApi.Models
         public int ItemId { get; set; }
         public string ItemName { get; set; } = string.Empty;
         public string Unit { get; set; } = string.Empty;
+        public string ItemCode { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
     }
 
     public class UnitByItemId

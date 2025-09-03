@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useMutation, useQueryClient} from "@tanstack/react-query";
 import api from "../../api";
 import { useUsers, useItems } from "../../hooks/useUsers";
@@ -40,12 +40,13 @@ const CreateQuotation = ({roleId}) => {
   const {data: approvers = [], isAppLoading, isAppError} = useApprovers();
   const selectedApprover = form.approver || (approvers[0]) || null;
   const {data: endorsers = [], isEndoLoading, isEndoError} = useEndorsers();
-  const selectedEndorser = form.endorser ||(endorsers[1]) || null;
+  const selectedEndorser = form.endorser || (endorsers.length > 1 ? endorsers[1] : null) || null;
   const {data: particulars = [], isItemLoading, isItemError} = useItems();
   const {data: companies = [], isCompanyLoading, isCompanyError} = useCompanyList();
   const selectedCompany = form.companyName || null;
   const {data: locations = [], isLocationLoading, isLocationError} = useLocationList(selectedCompany?.companyID);
   const selectedLocation = form.location || null;
+
 
   const createQuotation = useMutation ({
     mutationFn:(newQuotation) => api.post("Quotation/create", newQuotation, { withCredentials: true }),
@@ -203,6 +204,24 @@ const CreateQuotation = ({roleId}) => {
       setCanSubmit(false);
   };
 
+  const handleItemAutocompleteChange = (index, field, newValue) => {
+      setItems((prev) => {
+          const next = [...prev];
+          const updated = { ...next[index], [field]: newValue || '' }; 
+          if (field === 'item') {
+              updated.unit = newValue ? (newValue.unit ?? newValue.Unit ?? '') : ''; 
+          }
+          next[index] = updated;
+          return next;
+      });
+      setRowErrors((prev) => {
+          const next = [...prev];
+          next[index] = { ...next[index], [field]: '' }; 
+          return next;
+      });
+      setCanSubmit(false);
+  };
+
 
 
 const validateRow = (row) => {
@@ -238,7 +257,7 @@ const removeItemRow = () => {
   setItems ((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
   setRowErrors((prev) => (prev.length > 1 ? prev.slice(0, -1): prev));
 };
- 
+
  const handlePreview = () => {
     const itemErrors = items.map(row => validateRow(row));
     setRowErrors(itemErrors);
@@ -251,6 +270,7 @@ const removeItemRow = () => {
     if (!form.companyName) errors.companyName = errorMessage;
     if (!form.location) errors.location = errorMessage;
     if (!form.submittedBy) errors.submittedBy = errorMessage;
+    if (selectedOptions === null) errors.vat = errorMessage;
 
     if (Object.keys(errors).length > 0) {
         setErrors(errors); // Update your errors state 
@@ -260,7 +280,33 @@ const removeItemRow = () => {
     //clear errors if field has value || not empty
      setErrors({});
      alert('All data is valid. Check console for preview.');
-     console.log("Validated Data:", form, items);
+    const itemsPayload = items.map(item => ({
+        ItemID: item.item?.itemId || item.item?.ItemId || null,
+        ItemDescription: item.itemDescription || '',
+        Quantity: parseInt(item.qty, 10) || 0,
+        UnitCost: parseFloat(item.unitCost) || 0.0,
+        Markup: parseInt(item.markup, 10) || 0,
+        TotalCost: parseFloat(item.totalCost) || 0.0
+    }));
+
+    const payload = {
+        ClientName: form.clientName,
+        ProjectName: form.ProjectName,
+        CompanyID: form.companyName.companyID,
+        LocationID: form.location.locationID,
+        CompanyAddress: form.CompanyAddress,
+        Terms: form.Terms,
+        Endorser: form.endorser.userId || selectedEndorser.userId || 0,
+        Approver: form.approver.userId || selectedApprover.userId || 0,
+        SubmittedBy: form.submittedBy.userId || 0,
+        Discount: discount || 0,
+        VAT: selectedOptions ? selectedOptions.label : null,
+        OverAllTotal: overallTotal || 0,
+        GrandTotalVat: grandTotal || 0,
+        Items: itemsPayload
+    };
+
+    console.log('Preview Payload:', payload);
      setCanSubmit(true);
 
 };
@@ -283,11 +329,11 @@ const handleSubmit = async (e) => {
         LocationID: form.location.locationID,
         CompanyAddress: form.CompanyAddress,
         Terms: form.Terms,
-        Endorser: form.endorser || 0,
-        Approver: form.approver || 0,
+        Endorser: form.endorser.userId || selectedEndorser.userId || 0,
+        Approver: form.approver.userId || selectedApprover.userId || 0,
         SubmittedBy: form.submittedBy.userId || 0,
         Discount: discount || 0,
-       VAT: selectedOptions ? selectedOptions.label : null,
+        VAT: selectedOptions ? selectedOptions.label : null,
         OverAllTotal: overallTotal || 0,
         GrandTotalVat: grandTotal || 0,
         Items: itemsPayload
@@ -496,7 +542,12 @@ const handleSubmit = async (e) => {
             options={options}
             getOptionLabel={(options) => options.label}
             value={selectedOptions}
-            onChange={(event, newValue) => setSelectedOptions(newValue)}
+            onChange={(event, newValue) => {
+              setSelectedOptions(newValue);
+              if (newValue) {
+                  setErrors(prev => ({ ...prev, vat: '' }));
+              }
+            }}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -591,7 +642,7 @@ const handleSubmit = async (e) => {
             options={endorsers}
             getOptionLabel={(option) => option?.fullName || `Endorser ${option?.userId}`}
             value={selectedEndorser}
-              onChange={(event, newValue) => {
+            onChange={(event, newValue) => {
                 setForm({ ...form, endorser: newValue });
                 if (newValue) {
                     setErrors(prev => ({ ...prev, endorser: '' }));
@@ -704,7 +755,7 @@ const handleSubmit = async (e) => {
                       slotProps={{listbox: { maxheight: 240, overflow: 'auto'},}}
                       value={row.item}
                       isOptionEqualToValue={(o, v) => (o?.itemId ?? o?.ItemId) === (v?.itemId ?? v?.ItemId)}
-                      onChange={(event, newValue) => handleItemFieldChange(idx, 'item', newValue)}
+                      onChange={(e, newValue) => handleItemAutocompleteChange(idx, 'item', newValue)}
                       renderInput={(params) => (
                         <TextField
                           {...params}

@@ -29,6 +29,14 @@ namespace TodoApi.Controllers
         }
 
         [Authorize]
+        [HttpGet("quotations")]
+        public async Task<IActionResult> GetQuotations()
+        {
+            var quotations = await _quotationRepository.GetTableDataAsync();
+            return Ok(quotations);
+        }
+
+        [Authorize]
         [HttpPost("create")]
         public async Task<IActionResult> CreateQuotation([FromBody] QuotationModel quotation)
         {

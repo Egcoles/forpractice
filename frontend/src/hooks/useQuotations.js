@@ -23,7 +23,6 @@ export const useLocationList = (companyId) => {
         enabled: !!companyId, // Only run the query if companyId is defined
     });
 };
-
 // export const useCompanyAddress = (locationId) => {
 //     return useQuery({
 //         queryKey: ["addresses", locationId],

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery } from "@tanstack/react-query";
 import {useNavigate } from "react-router-dom";
-import { Box, Button, IconButton, Typography, Divider, Stack, TextField, FormControl, InputLabel, Select, MenuItem, Menu } from "@mui/material";
+import { Box, Button, IconButton, Modal, Typography, Divider, Stack, TextField, FormControl, InputLabel, Select, MenuItem, Menu } from "@mui/material";
 import { DataGrid } from '@mui/x-data-grid';
 import CreateIcon from '@mui/icons-material/Create';
 import EditIcon from '@mui/icons-material/Edit';
@@ -28,11 +28,11 @@ const getStatusColor = (status) => {
             return 'inherit'; 
     }
 };
-  
- const { data: prs = [] } = useQuery({
-    queryKey: ['prs'],
+ const [openModal, setOpenModal] = useState(false);
+ const { data: quotations = [] } = useQuery({
+    queryKey: ['quotations'],
     queryFn: async () => {
-      const response = await api.get("PR/PRTableDisplay", { withCredentials: true });
+      const response = await api.get("Quotation/quotations", { withCredentials: true });
       return response.data || [];
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -58,7 +58,7 @@ const getStatusColor = (status) => {
 
 const columns = [
         { 
-    field: 'ControlNo', 
+    field: 'controlNo', 
     headerName: 'Control No.', 
     width: 100,
     flex: 1,
@@ -83,35 +83,35 @@ const columns = [
   },
 
   {
-    field: 'ProjectName',
+    field: 'projectName',
     headerName: 'Project Name',
     headerAlign: "center", align: "center",
     editable: false,
     flex: 1,
   },
     {
-    field: 'ClientName',
+    field: 'clientName',
     headerName: 'Client Name',
     headerAlign: "center", align: "center",
     editable: false,
     flex: 1,
   },
     {
-    field: 'Company',
+    field: 'companyName',
     headerName: 'Company',
     headerAlign: "center", align: "center",
     editable: false,
     flex: 1,
   },
      {
-    field: 'Location',
+    field: 'locationName',
     headerName: 'Location',
     headerAlign: "center", align: "center",
     editable: false,
     flex: 1,
   },
   {
-    field: 'formStatus',
+    field: 'status',
     headerName: 'Status',
     headerAlign: "center", align: "center",
     editable: false,
@@ -123,7 +123,7 @@ const columns = [
         ),
   },
   {
-    field: 'formattedEntryDate',
+    field: 'formattedDate',
     headerName: 'EntryDate',
     headerAlign: "center", align: "center",
     editable: false,
@@ -174,19 +174,19 @@ const columns = [
 
 
   const statusOptions = useMemo(() => {
-    const unique = Array.from(new Set(prs.map(r => (r.formStatus ?? "None"))));
+    const unique = Array.from(new Set(quotations.map(r => (r.formStatus ?? "None"))));
     return ["All", ...unique];
-  }, [prs]);
+  }, [quotations]);
 
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return prs.filter(r => {
-      const matchesStatus = status === "All" ? true : (r.formStatus ?? "None") === status;
+    return quotations.filter(r => {
+      const matchesStatus = status === "All" ? true : (r.status ?? "None") === status;
       if (!q) return matchesStatus;
-      const hay = `${r.ControlNo ?? ""} ${r.projecDescription ?? ""}`.toLowerCase();
+      const hay = `${r.controlNo ?? ""} ${r.projectName ?? ""}`.toLowerCase();
       return matchesStatus && hay.includes(q);
     });
-  }, [prs, search, status]);
+  }, [quotations, search, status]);
 
  return (
 
@@ -205,7 +205,7 @@ const columns = [
           <TextField
             size="small"
             label="Search"
-            placeholder="PR No. or Project Description"
+            placeholder="Control No., Project Name"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -238,11 +238,11 @@ const columns = [
               },
             }}
             pageSizeOptions={[5]}
-            getRowId={(row) => row.prId ?? row.PRId ?? row.id ?? row.ControlNo}
+            getRowId={(row) =>  row.controlNo}
           
         />
     </Box>
- 
+    
 
     
      

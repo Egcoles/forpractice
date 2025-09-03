@@ -74,7 +74,10 @@ export default function DashboardLayout() {
 
   const location = useLocation();
 
-  const pathnames = location.pathname.split("/").filter((x) => x);
+const pathnames = location.pathname.split("/").filter((x) => x);
+const upperCamelCasePathnames = pathnames.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+
+
 
   useEffect(() => {
     if (isError) {
@@ -250,10 +253,10 @@ export default function DashboardLayout() {
                 <Link to="/dashboard" style={{ textDecoration: "none", color: "#1976d2" }}>
                   Home
                 </Link>
-                {pathnames
+                {upperCamelCasePathnames
                   .filter((value) => value !== "maintenance")
                   .map((value, index, filtered) => {
-                    const to = `/${pathnames.slice(0, pathnames.indexOf(value) + 1).join("/")}`;
+                    const to = `/${upperCamelCasePathnames.slice(0, upperCamelCasePathnames.indexOf(value) + 1).join("/")}`;
                     const isLast = index === filtered.length - 1;
 
                     return isLast ? (

@@ -27,7 +27,12 @@ namespace TodoApi.Repositories
             return await connection.QueryAsync<LocationModel>(query, new { CompanyID = companyId }, commandType: CommandType.StoredProcedure);
         }
 
-
+        public async Task<IEnumerable<QuotationModel>> GetTableDataAsync()
+        {
+            using var connection = _context.CreateConnection();
+            var query = "sp_GetQuotationTableSummary";
+            return await connection.QueryAsync<QuotationModel>(query, commandType: CommandType.StoredProcedure);
+        }
 
         //insert
         public async Task InsertAsync(QuotationModel quotation)
@@ -36,27 +41,27 @@ namespace TodoApi.Repositories
             var query = "sp_insertQuotation";
 
             using var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-           var QuotationID = await connection.ExecuteScalarAsync<int>(
-                query,
-                new
-                {
-                    quotation.ClientName,
-                    quotation.ProjectName,
-                    quotation.CompanyID,
-                    quotation.LocationID,
-                    quotation.Terms,
-                    quotation.VAT,
-                    quotation.Discount,
-                    quotation.SubmittedBy,
-                    quotation.Endorser,
-                    quotation.Apporver,
-                    quotation.CreatedBy,
-                    quotation.OverAllTotal,
-                    quotation.GrandTotalVat
-                },
-                commandType: CommandType.StoredProcedure
-            );
-         if (quotation?.Items != null)
+            var QuotationID = await connection.ExecuteScalarAsync<int>(
+                 query,
+                 new
+                 {
+                     quotation.ClientName,
+                     quotation.ProjectName,
+                     quotation.CompanyID,
+                     quotation.LocationID,
+                     quotation.Terms,
+                     quotation.VAT, 
+                     quotation.Discount,    
+                     quotation.SubmittedBy,
+                     quotation.Endorser,
+                     quotation.Approver,
+                     quotation.CreatedBy,
+                     quotation.OverAllTotal,
+                     quotation.GrandTotalVat
+                 },
+                 commandType: CommandType.StoredProcedure
+             );
+            if (quotation?.Items != null)
             {
                 foreach (var item in quotation.Items)
                 {
@@ -71,7 +76,7 @@ namespace TodoApi.Repositories
                             item.ItemDescription,
                             item.Quantity,
                             item.UnitCost,
-                            item.Markup,
+                            item.Markup, 
                             item.TotalCost
                         },
                         commandType: CommandType.StoredProcedure

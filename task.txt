@@ -14,7 +14,14 @@ SELECT TOP 1000 [id]
       ,[Appover]
       ,[createdDate]
   FROM [PRO_USER].[dbo].[QUOTATION]
-
+  
+controlNo
+Projectname
+Client NAme
+Company
+Location
+Status
+EntryDate
 
 
 
