@@ -55,7 +55,8 @@ public class AuthController(IConfiguration config, IAuthRepository authRepo) : C
         {
             Subject = new ClaimsIdentity([
                 new Claim(ClaimTypes.NameIdentifier, foundUser.UserId.ToString()),
-                new Claim(ClaimTypes.Name, foundUser.Username ?? string.Empty)
+                new Claim(ClaimTypes.Name, foundUser.Username ?? string.Empty),
+                new Claim("RoleId", foundUser.RoleId.ToString() ?? string.Empty)
             ]),
             
             Expires = DateTime.UtcNow.AddHours(10),

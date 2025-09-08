@@ -2,7 +2,6 @@ import { Outlet, useNavigate } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
-
 import {
   AppBar,
   Box,
@@ -21,6 +20,11 @@ import {
   MenuItem,
   Toolbar,
   Typography,
+  Grid,
+  Stack,
+  Avatar,
+  ListItemAvatar,
+  Badge,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -39,7 +43,15 @@ import {
   ListAlt as ListAltIcon,
   EditSquare as EditSquareIcon,
   Apartment as ApartmentIcon,
+  Circle as CircleIcon,
+  Mail as MailIcon,
+  Folder as FolderIcon,
+  Autorenew as AutorenewIcon,
+  Route as RouteIcon,
+  FileOpen as FileOpenIcon,
+  RoomPreferences as RoomPreferencesIcon,
 } from "@mui/icons-material";
+
 import { useAuth } from "../hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import api from "../api";
@@ -52,6 +64,12 @@ export default function DashboardLayout() {
   const [open, setOpen] = useState(true);
   const [anchorEl, setAnchorEl] = useState(null);
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
+  const [routing, setRouting] = useState(false);
+  const [notification, setNotification] = useState(false); 
+  const [propen, setPROpen] = useState(false);
+  const [quotationOpen, setQuotationOpen] = useState(false);
+  const [supplierOpen, setSupplierOpen] = useState(false);
+  const [cocOpen, setCocOpen] = useState(false);
   const queryClient = useQueryClient();
   const { data, isLoading, isError, error } = useAuth();
   const username = data?.username || "User";
@@ -59,8 +77,14 @@ export default function DashboardLayout() {
   const isMenuOpen = Boolean(anchorEl);
   const handleToggleDrawer = () => setOpen(!open);
   const handleToggleMaintenance = () => setMaintenanceOpen(!maintenanceOpen);
+  const hanldeToggleRouiting = () => setRouting(!routing);
+  const handleTogglenotification = () => setNotification(!notification);
   const handleMenuClick = (e) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
+  const handlePR = () => setPROpen(!propen);
+  const handleQuotation = () => setQuotationOpen(!quotationOpen);
+  const handleSupplier = () => setSupplierOpen(!supplierOpen);
+  const handleCoc = () => setCocOpen(!cocOpen);
   const handleLogout = async () => {
     handleMenuClose();
     try {
@@ -76,6 +100,7 @@ export default function DashboardLayout() {
 
 const pathnames = location.pathname.split("/").filter((x) => x);
 const upperCamelCasePathnames = pathnames.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+
 
 
 
@@ -96,7 +121,6 @@ const upperCamelCasePathnames = pathnames.map(word => word.charAt(0).toUpperCase
     department: "Department",
     smpt: "SMTP",
   };
-
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
@@ -127,11 +151,12 @@ const upperCamelCasePathnames = pathnames.map(word => word.charAt(0).toUpperCase
             </Typography>
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 3, mr: 2 }}>
             <IconButton>
-              <NotificationsIcon />
+               <Badge badgeContent={5} color="primary" sx={{ cursor: 'pointer' , fontSize: 12, px: 1 }}>
+                <NotificationsIcon onClick={handleTogglenotification} />
+              </Badge>
             </IconButton>
-
             <Box
               onClick={handleMenuClick}
               sx={{
@@ -166,6 +191,151 @@ const upperCamelCasePathnames = pathnames.map(word => word.charAt(0).toUpperCase
           </Box>
         </Toolbar>
       </AppBar>
+      {/* notification Drawer */}
+    <Drawer
+        anchor="right"
+        open={notification} 
+        onClose={handleTogglenotification}
+        sx={{
+        '& .MuiDrawer-paper': {
+          width: '380px', // Set your desired width
+        },
+      }}
+      >
+        <List sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}>
+          <ListItem>
+            <ListItemText primary="Notification"/>
+          </ListItem>
+         <Grid container spacing={2} justifyContent="center" alignItems="center" sx={{ px: 2, mb: 2, gap:2 }}>
+            <Grid item xs={12}>
+                <Typography variant="h6"  sx={{mt: 3, mb:2, ml:2,textAlign:"center"}}>Legend</Typography>
+                <Grid container spacing={1} >
+                    <Grid item xs={2}>
+                      <Typography variant="body2"><CircleIcon sx={{ fontSize: 12, textAlign:"center", mr: 1 }} color="warning"/>Endorsement</Typography>
+                    </Grid>
+                    <Grid item xs={2}>
+                       <Typography variant="body2"><CircleIcon sx={{ fontSize: 12, textAlign:"center", mr: 1}} color="info"/>Endorsed</Typography>
+                    </Grid>
+                    <Grid item xs={2}>
+                      <Typography variant="body2"><CircleIcon sx={{ fontSize: 12, mr: 1 }} color="success"/>Approved</Typography>
+                    </Grid>
+                    <Grid item xs={2}>
+                        <Typography variant="body2"><CircleIcon sx={{ fontSize: 12, mr: 1}} color="primary"/>Approval</Typography>
+                    </Grid>
+                    <Grid item xs={2}>
+                        <Typography variant="body2"><CircleIcon sx={{ fontSize: 12, mr: 1 }} color="error"/>Rejected</Typography>
+                    </Grid>
+                </Grid>
+            </Grid>
+          </Grid>
+        <Divider sx={{mt: 2}}/>
+
+        <ListItem sx={{mt: 2}}>
+          <ListItemAvatar>
+            <Avatar>
+              <FolderIcon />
+            </Avatar>
+          </ListItemAvatar>
+          <ListItemText primary="PR REQUEST"/>
+            <Badge badgeContent={4} color="primary" onClick={handlePR} >
+              <MailIcon color="action" />
+            </Badge>
+            <AutorenewIcon sx={{ ml: 2 }} />
+        </ListItem>
+        <Collapse  in={propen}  timeout="auto" unmountOnExit>
+          <List component="div" disablePadding>
+            <ListItem>
+              <CircleIcon sx={{ fontSize: 15, color:"transparent" , ml:4}}/>
+              <ListItemText primary="Nested Item 1" sx={{ml:1}}/>
+            </ListItem>
+            <ListItem>
+              <CircleIcon sx={{ fontSize: 15, color:"transparent" , ml:4}}/>
+              <ListItemText primary="Nested Item 2" sx={{ml:1}}/>
+            </ListItem>
+          </List>
+        </Collapse>
+
+        <Divider sx={{mt: 2}}/>
+        <ListItem>
+          <ListItemAvatar>
+            <Avatar>
+              <FolderIcon />
+            </Avatar>
+          </ListItemAvatar>
+          <ListItemText primary="QUOTATION REQUEST" />
+          <Badge badgeContent={4} color="primary" onClick={handleQuotation} >
+            <MailIcon color="action" />
+          </Badge>
+          <AutorenewIcon sx={{ ml: 2 }} />
+        </ListItem>
+        <Collapse  in={quotationOpen}  timeout="auto" unmountOnExit>
+          <List component="div" disablePadding>
+            <ListItem>
+              <CircleIcon sx={{ fontSize: 15, color:"transparent" , ml:4}}/>
+              <ListItemText primary="Nested Item 1" sx={{ml:1}}/>
+            </ListItem>
+            <ListItem>
+              <CircleIcon sx={{ fontSize: 15, color:"transparent" , ml:4}}/>
+              <ListItemText primary="Nested Item 2" sx={{ml:1}}/>
+            </ListItem>
+          </List>
+        </Collapse>
+
+        <Divider sx={{mt: 2}}/>
+        <ListItem>
+          <ListItemAvatar>
+             <Avatar>
+              <FolderIcon />
+             </Avatar>
+          </ListItemAvatar>
+          <ListItemText primary="SUPPLIER REQUEST" />
+            <Badge badgeContent={4} color="primary" onClick={handleSupplier} >
+              <MailIcon color="action" />
+            </Badge>
+            <AutorenewIcon sx={{ ml: 2 }} />
+        </ListItem>
+        <Collapse  in={supplierOpen}  timeout="auto" unmountOnExit>
+          <List component="div" disablePadding>
+            <ListItem>
+              <CircleIcon sx={{ fontSize: 15, color:"transparent" , ml:4}}/>
+              <ListItemText primary="Nested Item 1" sx={{ml:1}}/>
+            </ListItem>
+            <ListItem>
+              <CircleIcon sx={{ fontSize: 15, color:"transparent" , ml:4}}/>
+              <ListItemText primary="Nested Item 2" sx={{ml:1}}/>
+            </ListItem>
+          </List>
+        </Collapse>
+
+        <Divider sx={{mt: 2}}/>
+         <ListItem>
+          <ListItemAvatar>
+             <Avatar>
+              <FolderIcon />
+             </Avatar>
+          </ListItemAvatar>
+          <ListItemText primary="COC REQUEST" />
+            <Badge badgeContent={4} color="primary" onClick={handleCoc}>
+              <MailIcon color="action" />
+            </Badge>
+            <AutorenewIcon sx={{ ml: 2 }} />
+        </ListItem>
+         <Collapse  in={cocOpen}  timeout="auto" unmountOnExit>
+          <List component="div" disablePadding>
+            <ListItem>
+              <CircleIcon sx={{ fontSize: 15, color:"transparent" , ml:4}}/>
+              <ListItemText primary="Nested Item 1" sx={{ml:1}}/>
+            </ListItem>
+            <ListItem>
+              <CircleIcon sx={{ fontSize: 15, color:"transparent" , ml:4}}/>
+              <ListItemText primary="Nested Item 2" sx={{ml:1}}/>
+            </ListItem>
+          </List>
+        </Collapse>
+
+      </List>
+       
+      </Drawer>
 
       {/* Sidebar Drawer */}
       <Drawer
@@ -177,7 +347,7 @@ const upperCamelCasePathnames = pathnames.map(word => word.charAt(0).toUpperCase
             width: open ? drawerWidth : miniDrawerWidth,
             transition: "width 0.3s",
             overflowX: "hidden",
-            backgroundColor: "#0f172a",
+            background: 'linear-gradient(to right, #0f172a, #1e3a8a)',
             color: "#fff",
             borderRight: 0,
           },
@@ -198,6 +368,31 @@ const upperCamelCasePathnames = pathnames.map(word => word.charAt(0).toUpperCase
             <NavItem icon={<EditSquareIcon />} label="Quotation" open={open} onClick={() => navigate("/quotation")} />
             <NavItem icon={<EditSquareIcon />} label="PO Client" open={open} onClick={() => navigate("/client")} />
             <NavItem icon={<ListAltIcon />} label="PO Supplier" open={open} onClick={() => navigate("/supplier")} />
+            <ListItem disablePadding>
+              <ListItemButton onClick={hanldeToggleRouiting}>
+                <ListItemIcon sx={{ color: "#fff" }}>
+                  <RouteIcon />
+                </ListItemIcon>
+                {open && (
+                  <>
+                    <ListItemText primary="Routing Approval" />
+                    {routing ? <ExpandLess /> : <ExpandMore />}
+                  </>
+                )}
+              </ListItemButton>
+            </ListItem>
+            <Collapse in={routing && open} timeout="auto" unmountOnExit>
+              <List component="div" disablePadding>
+                <NavItem icon={<FileOpenIcon />} label="PR Endorsement" open={open} indent onClick={() => navigate("/routing/pr_endorsemnet")} />
+                <NavItem icon={<FileOpenIcon />} label="PO Endorsement" open={open} indent onClick={() => navigate("/routing/po_endorsemnet")} />
+                <NavItem icon={<FileOpenIcon />} label="Quotation Endorsement" open={open} indent onClick={() => navigate("/routing/quotation_endorsemnet")} />
+                <NavItem icon={<FileOpenIcon />} label="COC Endorsement" open={open} indent onClick={() => navigate("/routing/coc_endorsemnet")} />
+                <NavItem icon={<FileOpenIcon  />} label="PR Approval" open={open} indent onClick={() => navigate("/routing/pr_approval")} />
+                <NavItem icon={<FileOpenIcon  />} label="PO Approval" open={open} indent onClick={() => navigate("/routing/po_approval")} />
+                <NavItem icon={<FileOpenIcon  />} label="Quotation Approval" open={open} indent onClick={() => navigate("/routing/quotation_approval")} />
+                <NavItem icon={<FileOpenIcon />} label="COC Approval" open={open} indent onClick={() => navigate("/routing/coc_approval")} />
+              </List>
+            </Collapse>
             <ListItem disablePadding>
               <ListItemButton onClick={handleToggleMaintenance}>
                 <ListItemIcon sx={{ color: "#fff" }}>
@@ -221,6 +416,7 @@ const upperCamelCasePathnames = pathnames.map(word => word.charAt(0).toUpperCase
                 <NavItem icon={<BookIcon />} label="System Logs" open={open} indent onClick={() => navigate("/maintenance/system-logs")} />
               </List>
             </Collapse>
+             <NavItem icon={<RoomPreferencesIcon />} label="Modules" open={open} onClick={() => navigate("module/modules")} />
           </List>
 
           {open && (

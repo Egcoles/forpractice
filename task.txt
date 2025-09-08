@@ -1,3 +1,52 @@
+
+-> Notification
+ROLE ENDORSER 
+-recieve forendorsement status
+-monitor status of his/her created form
+
+ROLE APPROVER
+-recieve for approval status
+
+ROLE ENCODER
+-monitor status of his/her created form
+
+Rouiting
+-for endorsement
+-->endorser can reject and put remarks
+--> can approved 
+-for approval
+-->endorser can reject and put remarks
+--> can approved 
+import LegendToggleIcon from '@mui/icons-material/LegendToggle';
+Module Access
+-> Manage User access
+
+	      Legend
+	Endorsement Approval
+      Endorsed Approved  Rejected
+ENDORSER
+RoleId = 31 (two rows)
+Endorsement Endorsed 
+Approval Approved Rejected
+RoleId = 32
+Endorsement Approval Approved Rejected
+
+RoleId = 33
+Approval Approved Rejected
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /****** Script for SelectTopNRows command from SSMS  ******/
 SELECT TOP 1000 [id]
       ,[ReferenceNo]
@@ -14,20 +63,9 @@ SELECT TOP 1000 [id]
       ,[Appover]
       ,[createdDate]
   FROM [PRO_USER].[dbo].[QUOTATION]
-  
-controlNo
-Projectname
-Client NAme
-Company
-Location
-Status
-EntryDate
 
 
-
-
-
-/****** Script for SelectTopNRows command from SSMS  ******/
+/******Script for SelectTopNRows command from SSMS  ******/
 SELECT TOP 1000 [id]
       ,[QuotationID]
       ,[item]
@@ -40,32 +78,6 @@ SELECT TOP 1000 [id]
       ,[GrandTotalVAT]
       ,[CreatedDate]
   FROM [PRO_USER].[dbo].[QUOTATION_GRID]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 DATABASE SCHEMA
 PR TABLE

@@ -31,8 +31,19 @@ namespace TodoApi.Controllers
         [Authorize]
         [HttpGet("quotations")]
         public async Task<IActionResult> GetQuotations()
-        {
-            var quotations = await _quotationRepository.GetTableDataAsync();
+        {   
+            var userIdStr =
+                User.FindFirstValue(ClaimTypes.NameIdentifier) ??
+                User.FindFirst("UserId")?.Value ??
+                User.FindFirst("userid")?.Value ??
+                User.Identity?.Name;
+            if (!int.TryParse(userIdStr, out var userId))
+            {
+                return Unauthorized(new { message = "Unable to determine the current user id from the token." });
+            }
+            var CreateBy = userId;
+            Console.WriteLine($"Fetching quotations for CreatedBy: {CreateBy}, UserId from token): {userIdStr}");
+            var quotations = await _quotationRepository.GetTableDataAsync(CreateBy);
             return Ok(quotations);
         }
 
@@ -47,14 +58,12 @@ namespace TodoApi.Controllers
 
             try
             {
-                // Log available claims to aid debugging
                 Console.WriteLine("Logging User Claims:");
                 foreach (var claim in User.Claims)
                 {
                     Console.WriteLine($"Claim Type: {claim.Type}, Value: {claim.Value}");
                 }
                 Console.WriteLine($"Is Authenticated: {User.Identity?.IsAuthenticated}");
-                // Resolve the authenticated user's id from claims
                 var userIdStr =
                     User.FindFirstValue(ClaimTypes.NameIdentifier) ??
                     User.FindFirst("UserId")?.Value ??
@@ -65,10 +74,26 @@ namespace TodoApi.Controllers
                 {
                     return Unauthorized(new { message = "Unable to determine the current user id from the token." });
                 }
+                var RoleId = User.FindFirstValue("RoleId") ?? string.Empty;
+                if (string.IsNullOrEmpty(RoleId)) {
+                    Console.WriteLine("RoleId not found in claims.");
+                }
 
-                // Set the CreatedBy property
+                switch (RoleId) {
+                    case "31":
+                        quotation.Status = "FOR ENDORSEMENT";
+                        break;
+                    case "32":
+                        quotation.Status = "FOR APPROVAL";
+                        break;
+                    case "33":
+                        quotation.Status = "APPROVED";
+                        break;
+                }
+
                 quotation.CreatedBy = userId;
-
+                Console.WriteLine($"Creating quotation with Status: {quotation.Status}, CreatedBy: {quotation.CreatedBy}");
+          
                 await _quotationRepository.InsertAsync(quotation);
                 return CreatedAtAction(nameof(GetCompanies), new { id = quotation.QuotationID }, quotation);
             }

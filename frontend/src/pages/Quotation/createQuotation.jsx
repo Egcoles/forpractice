@@ -81,7 +81,7 @@ const CreateQuotation = ({roleId}) => {
       setSnackbar({ open: true, message: error.message, severity: "error" });
     }
   })
-  // Dynamic line items
+
   const initialItem = () => ({
     id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
     item: null,
@@ -155,12 +155,10 @@ const CreateQuotation = ({roleId}) => {
   const {overallTotal, grandTotal} = calculateTotalCost();
 
   const handleItemFieldChange = (index, field, value) => {
-      // Update items state
       setItems((prev) => {
           const next = [...prev];
           const row = {...next[index], [field]: value};
           
-          // Calculate total if applicable
           if (['qty', 'unitCost', 'markup'].includes(field)) {
               const totals = calculatePerRowCost(row);
               row.totalCost = totals.totalCost;
@@ -170,19 +168,17 @@ const CreateQuotation = ({roleId}) => {
           return next;
       });
 
-      // Clear error for itemDescription field immediately on change
       if (field === 'itemDescription') {
           setRowErrors((prevErrors) => {
               const nextErrors = [...prevErrors];
-              nextErrors[index] = {...nextErrors[index], itemDescription: ''}; // Clear the description error
+              nextErrors[index] = {...nextErrors[index], itemDescription: ''}; 
               return nextErrors;
           });
       }
       else if (field === 'item') {
-          // Clear error for item field as before
           setRowErrors((prevErrors) => {
               const nextErrors = [...prevErrors];
-              nextErrors[index] = {...nextErrors[index], item: ''}; // Clear the item error
+              nextErrors[index] = {...nextErrors[index], item: ''}; 
               return nextErrors;
           });
       } 
@@ -264,7 +260,6 @@ const removeItemRow = () => {
     const errors = {};
     const errorMessage = "Please input the required field.";
 
-    // Validate each required field
     if (!form.clientName) errors.clientName = errorMessage;
     if (!form.ProjectName) errors.ProjectName = errorMessage;
     if (!form.companyName) errors.companyName = errorMessage;
@@ -273,11 +268,10 @@ const removeItemRow = () => {
     if (selectedOptions === null) errors.vat = errorMessage;
 
     if (Object.keys(errors).length > 0) {
-        setErrors(errors); // Update your errors state 
+        setErrors(errors); 
         openSnackbar("Please complete the required fields before previewing.");
         return;
     }
-    //clear errors if field has value || not empty
      setErrors({});
      alert('All data is valid. Check console for preview.');
     const itemsPayload = items.map(item => ({
@@ -342,6 +336,7 @@ const handleSubmit = async (e) => {
     console.log('Final Payload:', payload);
 
     createQuotation.mutate(payload);
+    setCanSubmit(false);
 };
 
 
@@ -598,46 +593,9 @@ const handleSubmit = async (e) => {
             }}
           />
         </Grid>
-        <Grid size={4}>
-          <Autocomplete 
-            options={users}
-            getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`}
-            value={selectedUser}
-            onChange={(event, newValue) => {
-                setForm({ ...form, submittedBy: newValue });
-                if (newValue) {
-                    setErrors(prev => ({ ...prev, submittedBy: '' }));
-                }
-            }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                variant="outlined" 
-                label="Submitted By"
-                className="submittedBy"
-                name="submittedBy"
-                id="submittedBy"
-                error={!!errors.submittedBy}
-                helperText={errors.submittedBy}
-                sx={{
-                  '& .MuiInput-root': {
-                    '& fieldset': {
-                      border: 'none', 
-                    },
-                    '&:hover fieldset': {
-                      border: 'none', 
-                    },
-                    '&.Mui-focused fieldset': {
-                      border: 'none',
-                    },
-                  },
-                }}
-              />
-            )}
-          />
-        </Grid>
-        <Grid size={4}>
-          {roleId !== '33' && (
+        
+       <Grid size={4}>
+          {roleId !== '33' || roleId !== '32' && (
             <Autocomplete
             options={endorsers}
             getOptionLabel={(option) => option?.fullName || `Endorser ${option?.userId}`}
@@ -716,6 +674,44 @@ const handleSubmit = async (e) => {
             )}
           />
           )}
+        </Grid>
+        <Grid size={4}>
+          <Autocomplete 
+            options={users}
+            getOptionLabel={(option) => option?.fullName ||`User ${option?.userId}`}
+            value={selectedUser}
+            onChange={(event, newValue) => {
+                setForm({ ...form, submittedBy: newValue });
+                if (newValue) {
+                    setErrors(prev => ({ ...prev, submittedBy: '' }));
+                }
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined" 
+                label="Submitted By"
+                className="submittedBy"
+                name="submittedBy"
+                id="submittedBy"
+                error={!!errors.submittedBy}
+                helperText={errors.submittedBy}
+                sx={{
+                  '& .MuiInput-root': {
+                    '& fieldset': {
+                      border: 'none', 
+                    },
+                    '&:hover fieldset': {
+                      border: 'none', 
+                    },
+                    '&.Mui-focused fieldset': {
+                      border: 'none',
+                    },
+                  },
+                }}
+              />
+            )}
+          />
         </Grid>
         
       </Grid>

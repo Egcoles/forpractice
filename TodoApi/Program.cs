@@ -5,6 +5,7 @@ using TodoApi.Middleware;
 using TodoApi.Data;
 using TodoApi.Repositories.Interfaces;
 using TodoApi.Repositories;
+using TodoApi.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSignalR();
 builder.Services.AddScoped<DapperContextUsers>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
@@ -93,6 +95,7 @@ app.UseAuthorization();
 // Map controller routes
 app.MapControllers();
 app.MapGet("/", () => Results.Ok("✅ API is running..."));
+app.MapHub<NotificationHub>("/notificationHub");
 
 
 app.Run();

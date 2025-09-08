@@ -27,11 +27,13 @@ namespace TodoApi.Repositories
             return await connection.QueryAsync<LocationModel>(query, new { CompanyID = companyId }, commandType: CommandType.StoredProcedure);
         }
 
-        public async Task<IEnumerable<QuotationModel>> GetTableDataAsync()
+        public async Task<IEnumerable<QuotationModel>> GetTableDataAsync( int CreatedBy)
         {
             using var connection = _context.CreateConnection();
             var query = "sp_GetQuotationTableSummary";
-            return await connection.QueryAsync<QuotationModel>(query, commandType: CommandType.StoredProcedure);
+            return await connection.QueryAsync<QuotationModel>(
+                query, new { CreatedBy },
+                commandType: CommandType.StoredProcedure);
         }
 
         //insert
@@ -56,6 +58,7 @@ namespace TodoApi.Repositories
                      quotation.Endorser,
                      quotation.Approver,
                      quotation.CreatedBy,
+                     quotation.Status,
                      quotation.OverAllTotal,
                      quotation.GrandTotalVat
                  },
