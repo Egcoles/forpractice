@@ -54,22 +54,22 @@ export default function Dashboard() {
           {
             data: [10, 25, 15, 11],
             label: 'Endorsement', 
-            color: '#f5a742',
+            color: '#ed6c02',
           },
           {
             data: [20, 15, 30, 35],
             label: 'Endorsed', 
-            color: '#c8de1cff',
+            color: '#0288d1',
           },
           {
             data: [20, 15, 30, 15],
             label: 'Approval', 
-             color: '#4287f5',
+             color: '#1976d2',
           },
           {
             data: [20, 15, 30, 23],
             label: 'Approved', 
-             color: '#42f584',
+             color: '#2e7d32',
           },
         ],
       };

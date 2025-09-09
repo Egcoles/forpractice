@@ -6,8 +6,9 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Users from "./pages/maintenance/Users";
 import CreateUser from "./pages/maintenance/CreateUser";
-import Role from "./pages/maintenance/role";
-import Module from "./pages/module/Modules";
+import Role from "./pages/maintenance/Role";
+import Module from "./pages/module/modules";
+import Acess from "./pages/access/UserAcess";
 import PurchaseRequisition from "./pages/PurchaseRequisition";
 import Quotation from "./pages/Quotation";
 import CreatePR from "./pages/PR/createPR";
@@ -36,6 +37,7 @@ function App() {
               <Route path ="/pr" element={<PurchaseRequisition />} />
               <Route path ="/quotation" element={<Quotation />} />
               <Route path ="module/modules" element={<Module />} />
+              <Route path ="access/UserAcess" element={<Acess />} />
 
 
               {/* PR Routes */}

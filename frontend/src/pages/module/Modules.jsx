@@ -21,7 +21,8 @@ import {
   Send as SendIcon,
 } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
-
+import { useMutation, useQueryClient} from "@tanstack/react-query";
+import api from "../../api";
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   "& .MuiDialogContent-root": {
     padding: theme.spacing(2),
@@ -32,6 +33,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 const Module = () => {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [errors, setErrors] = useState({});
   const [mainName, setMainName] = useState("");
@@ -41,6 +43,21 @@ const Module = () => {
     message: "",
     severity: "warning",
   });
+
+  const createModule = useMutation ({
+    mutationFn:(newModule) => api.post("Module/create", newModule, {withCredentials: true}),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["modules"]);
+      setSnackbar({ open: true, message: "Module created successfully", severity: "success" });
+      setMainName("");
+      setRows([{ id: 1, value: "" }]);
+      setErrors({});
+    },
+    onError: (error) => {
+      setErrors(error.response.data);
+      openSnackbar("Failed to create module.", "error");
+    },
+  })
 
   const handleOpen = () => {
     setOpen(true);
@@ -83,14 +100,12 @@ const Module = () => {
 
     setErrors({});
     const payload = {
-      mainName: mainName.trim(),
-      rows: rows.map((row) => row.value.trim()),
-    };
-
+    moduleName: mainName.trim(), 
+    subModules: rows .map(r => r.value.trim()) .filter(v => v.length > 0) .map(v => ({ subName: v })), };
     console.log(payload);
-    // Example success flow:
-    // openSnackbar("Module created successfully.", "success");
-    // setOpen(false);
+    createModule.mutate(payload);
+    setOpen(false);
+    
   };
 
   return (

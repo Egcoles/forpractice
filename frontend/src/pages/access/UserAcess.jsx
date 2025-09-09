@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import { Link, useLocation } from "react-router-dom";
-import Breadcrumbs from "@mui/material/Breadcrumbs";
+import { useDepartmentNames } from "../../hooks/useDepartmentNames";
+import { useRoles } from "../../hooks/useRoles";
+import { useModles } from "../../hooks/useModules";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../../api";
 import {
   Typography,
   Box,
@@ -37,8 +40,7 @@ import {
   ExpandMore,
 } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
-import { useMutation, useQueryClient} from "@tanstack/react-query";
-import api from "../../api";
+
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   "& .MuiDialogContent-root": {
     padding: theme.spacing(2),
@@ -51,11 +53,15 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 const Acess = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [form, setForm] = useState ({
+    DepartmentId: "",
+    RoleId: "",
+  });
+  const [check, setCheck] = useState(false);
   const [page, setPage] = useState(false);
   const [open, setOpen] = useState(false);
   const [errors, setErrors] = useState({});
-  const [mainName, setMainName] = useState("");
-  const [rows, setRows] = useState([{ id: 1, value: "" }]);
+
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -93,19 +99,6 @@ const Acess = () => {
     setOpen(false);
   };
 
-  const addRow = () => {
-    const newId = rows.length > 0 ? Math.max(...rows.map((r) => r.id)) + 1 : 1;
-    setRows([...rows, { id: newId, value: "" }]);
-  };
-
-  const handleRowChange = (id, newValue) => {
-    setRows(rows.map((row) => (row.id === id ? { ...row, value: newValue } : row)));
-  };
-
-  const removeRow = (id) => {
-    setRows(rows.filter((row) => row.id !== id));
-  };
-
   const openSnackbar = (message, severity = "warning") => {
     setSnackbar({ open: true, message, severity });
   };
@@ -133,30 +126,17 @@ const Acess = () => {
     setOpen(false);
     
   };
-  const options = [
-      { label: 'Option 1', year: 1994 },
-      { label: 'Option 2', year: 1995 },
-      { label: 'Option 3', year: 1996 },
-  ]
-
-  const routingItems = [
-    { key: 'pr_endorsement', label: 'PR Endorsement', path: '/routing/pr_endorsemnet' },
-    { key: 'po_endorsement', label: 'PO Endorsement', path: '/routing/po_endorsemnet' },
-    { key: 'quotation_endorsement', label: 'Quotation Endorsement', path: '/routing/quotation_endorsemnet' },
-    { key: 'coc_endorsement', label: 'COC Endorsement', path: '/routing/coc_endorsemnet' },
-    { key: 'pr_approval', label: 'PR Approval', path: '/routing/pr_approval' },
-    { key: 'po_approval', label: 'PO Approval', path: '/routing/po_approval' },
-    { key: 'quotation_approval', label: 'Quotation Approval', path: '/routing/quotation_approval' },
-    { key: 'coc_approval', label: 'COC Approval', path: '/routing/coc_approval' },
-  ];
+  const { data: roles = [], isLoading, isError } = useRoles();
+  const { data: departments = [], isLoading: isDeptLoading, isError: isDeptError, } = useDepartmentNames();
+  const {data: modules = [], isLoading: isModLoading, isError: isModError, } = useModles([]);
 
   const [selectedRouting, setSelectedRouting] = useState([]);
 
-  const allRoutingSelected = selectedRouting.length === routingItems.length && routingItems.length > 0;
+  const allRoutingSelected = selectedRouting.length === modules.length && modules.length > 0;
   const someRoutingSelected = selectedRouting.length > 0 && !allRoutingSelected;
 
   const handleToggleAllRouting = (checked) => {
-    setSelectedRouting(checked ? routingItems.map((i) => i.key) : []);
+    setSelectedRouting(checked ? modules.map((i) => i.key) : []);
   };
 
   const handleToggleRoutingItem = (key, checked) => {
@@ -228,21 +208,39 @@ const Acess = () => {
                  <Autocomplete
                     disablePortal
                     fullWidth
-                    options={options}
-                    renderInput={(params) => <TextField {...params} label="Department" />}
+                    options={roles}
+                    getOptionLabel={(option) => option?.roleName ||  `Role ${option?.id}`}
+                    value={roles.find((d) => d.id === form.RoleId) || null}
+                        onChange={(event, newValue) => {
+                            setForm((prev) => ({
+                            ...prev,
+                            RoleId: newValue ? newValue.id : "",
+                            }));
+                        }}
+                    renderInput={(params) => <TextField {...params} label="Role" />}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
                     />
                 </Grid>
                 <Grid size={6}>
                     <Autocomplete
-                        disablePortal
-                        fullWidth
-                        options={options}
-                        renderInput={(params) => <TextField {...params} label="Roles" />}
-                        />
+                        options={departments}
+                        getOptionLabel={(option) => option?.departmentName || `Department ${option?.id}`}
+                        value={departments.find((d) => d.id === form.DepartmentId) || null}
+                        onChange={(event, newValue) => {
+                          setForm((prev) => ({
+                            ...prev,
+                            DepartmentId: newValue ? newValue.id : "",
+                          }));
+                        }}
+                        renderInput={(params) => <TextField {...params} label="Department" required/>}
+                        isOptionEqualToValue={(option, value) => option.id === value.id}
+                    />
                 </Grid>
                 <Grid size={12}>
-                    <ListItem disablePadding>
-                        <ListItemButton onClick={handleTogglePage}>
+                    {modules.map((mainId) => (
+                      <React.Fragment key={mainId.id}>
+                        <ListItem disablePadding >
+                          <ListItemButton onClick={handleTogglePage}>
                             <ListItemIcon sx={{ color: "#101010ff" }}>
                               <Checkbox
                                 edge="start"
@@ -255,34 +253,36 @@ const Acess = () => {
                                 }}
                               />
                             </ListItemIcon>
-                            <ListItemText primary="Routing Approval" /> 
-                            {page? <ExpandLess /> : <ExpandMore />}
-                        </ListItemButton>
-                    </ListItem>
+                            <ListItemText primary={`${mainId.moduleName}`} />
+                            {page ? <ExpandLess /> : <ExpandMore />}
+                          </ListItemButton>
+                        </ListItem>
                         <Collapse in={page && open} timeout="auto" unmountOnExit>
-                            <List component="div" disablePadding>
-                              {routingItems.map((item) => (
-                                <ListItem key={item.key} disablePadding sx={{ pl: 4 }}>
-                                  <ListItemButton onClick={() => navigate(item.path)}>
-                                    <ListItemIcon sx={{ color: "#101010ff" }}>
-                                      <Checkbox
-                                        edge="start"
-                                        checked={selectedRouting.includes(item.key)}
-                                        onClick={(e) => e.stopPropagation()}
-                                        onChange={(e) => {
-                                          e.stopPropagation();
-                                          handleToggleRoutingItem(item.key, e.target.checked);
-                                        }}
-                                        tabIndex={-1}
-                                        disableRipple
-                                      />
-                                    </ListItemIcon>
-                                    <ListItemText primary={item.label} />
-                                  </ListItemButton>
-                                </ListItem>
-                              ))}
-                            </List>
+                          <List component="div" disablePadding>
+                            {modules.map((subModuleId) => (
+                              <ListItem key={subModuleId.id} disablePadding sx={{ pl: 4 }}>
+                                <ListItemButton onClick={() => navigate(subModuleId.path)}>
+                                  <ListItemIcon sx={{ color: "#101010ff" }}>
+                                    <Checkbox
+                                      edge="start"
+                                      checked={selectedRouting.includes(subModuleId.key)}
+                                      onClick={(e) => e.stopPropagation()}
+                                      onChange={(e) => {
+                                        e.stopPropagation();
+                                        handleToggleRoutingItem(subModuleId.key, e.target.checked);
+                                      }}
+                                      tabIndex={-1}
+                                      disableRipple
+                                    />
+                                  </ListItemIcon>
+                                  <ListItemText primary={subModuleId.subName} />
+                                </ListItemButton>
+                              </ListItem>
+                            ))}
+                          </List>
                         </Collapse>
+                      </React.Fragment>
+                    ))}
                 </Grid>
             </Grid>
         </DialogContent>
@@ -297,15 +297,6 @@ const Acess = () => {
   );
 };
 
-function NavItem({ icon, label, onClick, open, indent = false }) {
-  return (
-    <ListItem disablePadding>
-      <ListItemButton onClick={onClick} sx={indent ? { pl: 4 } : {}}>
-        <ListItemIcon sx={{ color: "#101010ff" }}>{icon}</ListItemIcon>
-        {open && <ListItemText primary={label} />}
-      </ListItemButton>
-    </ListItem>
-  );
-}
+
 
 export default Acess;

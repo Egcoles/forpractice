@@ -36,7 +36,71 @@ Approval Approved Rejected
 
 
 
-
+if this is the response of the api how to display in my fornt end?
+[
+  {
+    "mainId": 3,
+    "moduleName": "",
+    "date": "2025-09-09T09:16:54.8",
+    "subModules": []
+  },
+  {
+    "mainId": 4,
+    "moduleName": "",
+    "date": "2025-09-09T09:18:50.29",
+    "subModules": []
+  },
+  {
+    "mainId": 5,
+    "moduleName": "",
+    "date": "2025-09-09T09:22:10.497",
+    "subModules": []
+  },
+  {
+    "mainId": 6,
+    "moduleName": "TEST MODULE",
+    "date": "2025-09-09T09:31:32.183",
+    "subModules": [
+      {
+        "subModuleId": 2,
+        "mainId": 6,
+        "subName": "SUB MODULE !",
+        "date": "2025-09-09T09:31:32.187"
+      }
+    ]
+  },
+  {
+    "mainId": 7,
+    "moduleName": "Routing Approval",
+    "date": "2025-09-09T09:34:17.87",
+    "subModules": [
+      {
+        "subModuleId": 3,
+        "mainId": 7,
+        "subName": "PR Endorsement",
+        "date": "2025-09-09T09:34:17.87"
+      },
+      {
+        "subModuleId": 4,
+        "mainId": 7,
+        "subName": "PR Approval",
+        "date": "2025-09-09T09:34:17.87"
+      },
+      {
+        "subModuleId": 5,
+        "mainId": 7,
+        "subName": "Quotation Endorsement",
+        "date": "2025-09-09T09:34:17.87"
+      },
+      {
+        "subModuleId": 6,
+        "mainId": 7,
+        "subName": "Quotation Approval",
+        "date": "2025-09-09T09:34:17.87"
+      }
+    ]
+  }
+]
 
 
 

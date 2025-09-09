@@ -50,6 +50,7 @@ import {
   Route as RouteIcon,
   FileOpen as FileOpenIcon,
   RoomPreferences as RoomPreferencesIcon,
+  Key as KeyIcon,
 } from "@mui/icons-material";
 
 import { useAuth } from "../hooks/useAuth";
@@ -417,6 +418,7 @@ const upperCamelCasePathnames = pathnames.map(word => word.charAt(0).toUpperCase
               </List>
             </Collapse>
              <NavItem icon={<RoomPreferencesIcon />} label="Modules" open={open} onClick={() => navigate("module/modules")} />
+             <NavItem icon={<KeyIcon />} label="User Access" open={open} onClick={() => navigate("access/UserAcess")} />
           </List>
 
           {open && (
