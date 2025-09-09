@@ -145,156 +145,156 @@ const Acess = () => {
     );
   };
 
-  return (
+return (
     <>
-      <Box p={3}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h5" component="h5" fontWeight="bold">
-            User Access Control
-          </Typography>
-          <Button variant="contained" startIcon={<AddCircleIcon />} onClick={handleOpen}>
-            Add Access
-          </Button>
-        </Stack>
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={4000}
-          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-          anchorOrigin={{ vertical: "top", horizontal: "right" }}
-          sx={{ zIndex: (theme) => theme.zIndex.modal + 1 }}
-        >
-          <Alert
-            onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-            severity={snackbar.severity}
-            sx={{ width: "100%" }}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-      </Box>
+        <Box p={3}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h5" component="h5" fontWeight="bold">
+                    User Access Control
+                </Typography>
+                <Button variant="contained" startIcon={<AddCircleIcon />} onClick={handleOpen}>
+                    Add Access
+                </Button>
+            </Stack>
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                sx={{ zIndex: (theme) => theme.zIndex.modal + 1 }}
+            >
+                <Alert
+                    onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+                    severity={snackbar.severity}
+                    sx={{ width: "100%" }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
+        </Box>
 
-      <BootstrapDialog
-        container={() => document.getElementById('root')}
-        onClose={handleClose}
-        aria-labelledby="customized-dialog-title"
-        open={open}
-        fullWidth
-        maxWidth="lg"
-        PaperProps={{
-          component: "form",
-          onSubmit: handleSubmission,
-          noValidate: true,
-        }}
-      >
-        <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title">
-          Set Up Access
-        </DialogTitle>
-        <IconButton
-          aria-label="close"
-          onClick={handleClose}
-          sx={(theme) => ({
-            position: "absolute",
-            right: 8,
-            top: 8,
-            color: theme.palette.grey[500],
-          })}
+        <BootstrapDialog
+            container={() => document.getElementById('root')}
+            onClose={handleClose}
+            aria-labelledby="customized-dialog-title"
+            open={open}
+            fullWidth
+            maxWidth="lg"
+            PaperProps={{
+                component: "form",
+                onSubmit: handleSubmission,
+                noValidate: true,
+            }}
         >
-          <CloseIcon />
-        </IconButton>
+            <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title">
+                Set Up Access
+            </DialogTitle>
+            <IconButton
+                aria-label="close"
+                onClick={handleClose}
+                sx={(theme) => ({
+                    position: "absolute",
+                    right: 8,
+                    top: 8,
+                    color: theme.palette.grey[500],
+                })}
+            >
+                <CloseIcon />
+            </IconButton>
 
-        <DialogContent dividers >
-            <Grid container spacing={2}>
-                <Grid size={6}>
-                 <Autocomplete
-                    disablePortal
-                    fullWidth
-                    options={roles}
-                    getOptionLabel={(option) => option?.roleName ||  `Role ${option?.id}`}
-                    value={roles.find((d) => d.id === form.RoleId) || null}
-                        onChange={(event, newValue) => {
-                            setForm((prev) => ({
-                            ...prev,
-                            RoleId: newValue ? newValue.id : "",
-                            }));
-                        }}
-                    renderInput={(params) => <TextField {...params} label="Role" />}
-                    isOptionEqualToValue={(option, value) => option.id === value.id}
-                    />
-                </Grid>
-                <Grid size={6}>
-                    <Autocomplete
-                        options={departments}
-                        getOptionLabel={(option) => option?.departmentName || `Department ${option?.id}`}
-                        value={departments.find((d) => d.id === form.DepartmentId) || null}
-                        onChange={(event, newValue) => {
-                          setForm((prev) => ({
-                            ...prev,
-                            DepartmentId: newValue ? newValue.id : "",
-                          }));
-                        }}
-                        renderInput={(params) => <TextField {...params} label="Department" required/>}
-                        isOptionEqualToValue={(option, value) => option.id === value.id}
-                    />
-                </Grid>
-                <Grid size={12}>
-                    {modules.map((mainId) => (
-                      <React.Fragment key={mainId.id}>
-                        <ListItem disablePadding >
-                          <ListItemButton onClick={handleTogglePage}>
-                            <ListItemIcon sx={{ color: "#101010ff" }}>
-                              <Checkbox
-                                edge="start"
-                                checked={allRoutingSelected}
-                                indeterminate={someRoutingSelected}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  handleToggleAllRouting(e.target.checked);
-                                }}
-                              />
-                            </ListItemIcon>
-                            <ListItemText primary={`${mainId.moduleName}`} />
-                            {page ? <ExpandLess /> : <ExpandMore />}
-                          </ListItemButton>
-                        </ListItem>
-                        <Collapse in={page && open} timeout="auto" unmountOnExit>
-                          <List component="div" disablePadding>
-                            {modules.map((subModuleId) => (
-                              <ListItem key={subModuleId.id} disablePadding sx={{ pl: 4 }}>
-                                <ListItemButton onClick={() => navigate(subModuleId.path)}>
-                                  <ListItemIcon sx={{ color: "#101010ff" }}>
-                                    <Checkbox
-                                      edge="start"
-                                      checked={selectedRouting.includes(subModuleId.key)}
-                                      onClick={(e) => e.stopPropagation()}
-                                      onChange={(e) => {
-                                        e.stopPropagation();
-                                        handleToggleRoutingItem(subModuleId.key, e.target.checked);
-                                      }}
-                                      tabIndex={-1}
-                                      disableRipple
+            <DialogContent dividers >
+                    <Grid container spacing={2}>
+                            <Grid size={6}>
+                             <Autocomplete
+                                    disablePortal
+                                    fullWidth
+                                    options={roles}
+                                    getOptionLabel={(option) => option?.roleName ||  `Role ${option?.id}`}
+                                    value={roles.find((d) => d.id === form.RoleId) || null}
+                                            onChange={(event, newValue) => {
+                                                    setForm((prev) => ({
+                                                    ...prev,
+                                                    RoleId: newValue ? newValue.id : "",
+                                                    }));
+                                            }}
+                                    renderInput={(params) => <TextField {...params} label="Role" />}
+                                    isOptionEqualToValue={(option, value) => option.id === value.id}
                                     />
-                                  </ListItemIcon>
-                                  <ListItemText primary={subModuleId.subName} />
-                                </ListItemButton>
-                              </ListItem>
-                            ))}
-                          </List>
-                        </Collapse>
-                      </React.Fragment>
-                    ))}
-                </Grid>
-            </Grid>
-        </DialogContent>
+                            </Grid>
+                            <Grid size={6}>
+                                    <Autocomplete
+                                            options={departments}
+                                            getOptionLabel={(option) => option?.departmentName || `Department ${option?.id}`}
+                                            value={departments.find((d) => d.id === form.DepartmentId) || null}
+                                            onChange={(event, newValue) => {
+                                                setForm((prev) => ({
+                                                    ...prev,
+                                                    DepartmentId: newValue ? newValue.id : "",
+                                                }));
+                                            }}
+                                            renderInput={(params) => <TextField {...params} label="Department" required/>}
+                                            isOptionEqualToValue={(option, value) => option.id === value.id}
+                                    />
+                            </Grid>
+                            <Grid size={12}>
+                                    {modules.map((mainId) => (
+                                        <React.Fragment>
+                                            <ListItem disablePadding  key={mainId.id}>
+                                                <ListItemButton onClick={handleTogglePage}>
+                                                    <ListItemIcon sx={{ color: "#101010ff" }}>
+                                                        <Checkbox
+                                                            edge="start"
+                                                            checked={allRoutingSelected}
+                                                            indeterminate={someRoutingSelected}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onChange={(e) => {
+                                                                e.stopPropagation();
+                                                                handleToggleAllRouting(e.target.checked);
+                                                            }}
+                                                        />
+                                                    </ListItemIcon>
+                                                    <ListItemText primary={`${mainId.moduleName}`} />
+                                                    {page ? <ExpandLess /> : <ExpandMore />}
+                                                </ListItemButton>
+                                            </ListItem>
+                                            <Collapse in={page && open} timeout="auto" unmountOnExit>
+                                                <List component="div" disablePadding>
+                                                    {mainId.subModules && mainId.subModules.map((subModuleId) => (
+                                                        <ListItem key={subModuleId.id} disablePadding sx={{ pl: 4 }}>
+                                                            <ListItemButton onClick={() => navigate(subModuleId.path)}>
+                                                                <ListItemIcon sx={{ color: "#101010ff" }}>
+                                                                    <Checkbox
+                                                                        edge="start"
+                                                                        checked={selectedRouting.includes(subModuleId.key)}
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        onChange={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleToggleRoutingItem(subModuleId.key, e.target.checked);
+                                                                        }}
+                                                                        tabIndex={-1}
+                                                                        disableRipple
+                                                                    />
+                                                                </ListItemIcon>
+                                                                <ListItemText primary={subModuleId.subName} />
+                                                            </ListItemButton>
+                                                        </ListItem>
+                                                    ))}
+                                                </List>
+                                            </Collapse>
+                                        </React.Fragment>
+                                    ))}
+                            </Grid>
+                    </Grid>
+            </DialogContent>
 
-        <DialogActions>
-          <Button variant="contained" type="submit" endIcon={<SendIcon />}>
-            Submit
-          </Button>
-        </DialogActions>
-      </BootstrapDialog>
+            <DialogActions>
+                <Button variant="contained" type="submit" endIcon={<SendIcon />}>
+                    Submit
+                </Button>
+            </DialogActions>
+        </BootstrapDialog>
     </>
-  );
+);
 };
 
 
