@@ -48,6 +48,45 @@ namespace TodoApi.Repositories
 
         }
 
+        public async Task InsertModuleAsync(ModuleAccessRequestDto model)
+        {
+            using var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+            using var connection = _context.CreateConnection();
+            var query = "sp_insert_ModuleAccessSetUp";
+
+            try
+            {
+                foreach (var moduleString in model.SelectedModules)
+                {
+                    var ids = moduleString.Split('-');
+                    if (ids.Length != 2 || !int.TryParse(ids[0], out var mainId) || !int.TryParse(ids[1], out var subModuleId))
+
+                    {
+                        Console.WriteLine($"Invalid module format skipped: {moduleString}");
+                        continue;
+                    }
+
+                    var parameters = new
+                    {
+                        DepartmentID = model.DepartmentId,
+                        RoleID = model.RoleId,
+                        MainID = mainId,
+                        SubModuleID = subModuleId,
+                    };
+
+                    await connection.ExecuteAsync(query, parameters, commandType: CommandType.StoredProcedure);
+                }
+
+                transaction.Complete();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Transaction failed: {ex.Message}");
+                throw;
+            }
+        }
+
+
         public async Task<IEnumerable<MainModel>> GetMainModuleAsync()
         {
 
@@ -84,6 +123,15 @@ namespace TodoApi.Repositories
             return mainModels;
         }
 
+        public async Task<IEnumerable<ModuleAccessResponseDto>> GetModuleAccessResponseAsync()
+        {
+            using var connection = _context.CreateConnection();
+            var query = "sp_GetRoleModuleAccess";
+            return await connection.QueryAsync<ModuleAccessResponseDto>(
+                query,
+                commandType: CommandType.StoredProcedure
+            );
+        }
         
     }
 }

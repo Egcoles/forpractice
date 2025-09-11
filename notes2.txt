@@ -11,7 +11,7 @@ BASED ON SELECTED LOCATION
 LOCATION ID WILL BE PASS AS PARAMETER TO GET THE EXACT ADDRESS 
 
 
-disbleb
+The MVC pattern defines the overall structure of the user interaction, while the domain model defines the core business, and the ORM handles the technical details of the database interaction.
 
 
 

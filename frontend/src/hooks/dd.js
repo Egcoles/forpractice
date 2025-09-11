@@ -1,311 +1,153 @@
-import React, { useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
-import { Link, useLocation } from "react-router-dom";
-import Breadcrumbs from "@mui/material/Breadcrumbs";
-import {
-  Typography,
-  Box,
-  Button,
-  Stack,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Autocomplete,
-  Grid,
-   Collapse,
-   IconButton,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Checkbox,
+// can we add the react router load?
+// It is possible to use React Router loaders with TanStack Query. This powerful combination allows you to pre-fetch data before a route component is rendered, improving the user experience and centralizing your data-loading logic. This is especially useful for managing the loading and error states within the router, keeping your components cleaner. 
+// Here is how you would modify your application to use React Router loaders.
+// 1. Configure the data router
+// First, you need to set up your router using createBrowserRouter, which is required for using the data loading APIs. You will define the routes and attach the loaders to them in a centralized configuration. 
+// javascript
+// src/router.jsx (or similar file)
+import { createBrowserRouter } from "react-router-dom";
+import App from "./App";
+import Access, { loader as accessLoader } from "./components/Access";
+import AddUserAcess, { loader as addUserAccessLoader } from "./components/AddUserAccess";
+import ErrorPage from "./ErrorPage";
 
-} from "@mui/material";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
-import {
-  Close as CloseIcon,
-  AddCircle as AddCircleIcon,
-  Remove as RemoveIcon,
-  Add as AddIcon,
-  Send as SendIcon,
-  FileOpen as FileOpenIcon,
-  ExpandLess,
-  ExpandMore,
-} from "@mui/icons-material";
-import { styled } from "@mui/material/styles";
-import { useMutation, useQueryClient} from "@tanstack/react-query";
-import api from "../../api";
-const BootstrapDialog = styled(Dialog)(({ theme }) => ({
-  "& .MuiDialogContent-root": {
-    padding: theme.spacing(2),
+export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <App />,
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: "access",
+        element: <Access />,
+        loader: accessLoader, // Attach the loader here
+      },
+      {
+        path: "access/AddUserAccess",
+        element: <AddUserAcess />,
+        loader: addUserAccessLoader, // Attach the loader here
+      },
+    ],
   },
-  "& .MuiDialogActions-root": {
-    padding: theme.spacing(1),
-  },
-}));
+]);
+// Use code with caution.
 
-const Acess = () => {
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-  const [page, setPage] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [mainName, setMainName] = useState("");
-  const [rows, setRows] = useState([{ id: 1, value: "" }]);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "warning",
+// 2. Implement the loaders
+// In each component's file, you will create and export an async function called loader. Inside this function, you will use a QueryClient to fetch the data. This pre-fills the TanStack Query cache so that when the component is rendered, the useQuery hook resolves instantly with the cached data. 
+// Access component loader
+// For the Access component, the loader will fetch the list of modules.
+// javascript
+// src/components/Access.jsx
+import { useLoaderData } from "react-router-dom";
+import { QueryClient, useQuery } from "@tanstack/react-query";
+import api from "../api";
+// ... (other imports)
+
+// Create an instance of QueryClient to be used in the loader
+const queryClient = new QueryClient();
+
+export const loader = async () => {
+  // Use `ensureQueryData` to either return cached data or fetch it
+  return await queryClient.ensureQueryData({
+    queryKey: ["modules"],
+    queryFn: async () => {
+      const response = await api.get("Module/role-module-permissions", { withCredentials: true });
+      return response.data || [];
+    },
+    staleTime: 1000 * 60 * 5,
   });
+};
 
-  const handleTogglePage = () => setPage(!page);
+const Access = () => {
+  const navigate = useNavigate();
+  // We can use `useQuery` with the same key to access the cached data.
+  const { data: modules = [] } = useQuery({
+    queryKey: ["modules"],
+    queryFn: async () => { /* no need to refetch here */ },
+  });
+  const loaderData = useLoaderData(); // Optional: to demonstrate access
 
-  const createModule = useMutation ({
-    mutationFn:(newModule) => api.post("Module/create", newModule, {withCredentials: true}),
-    onSuccess: () => {
-      queryClient.invalidateQueries(["modules"]);
-      setSnackbar({ open: true, message: "Module created successfully", severity: "success" });
-      setMainName("");
-      setRows([{ id: 1, value: "" }]);
-      setErrors({});
-    },
-    onError: (error) => {
-      setErrors(error.response.data);
-      openSnackbar("Failed to create module.", "error");
-    },
-  })
+  // ... (rest of the component)
 
-  const handleOpen = () => {
-    // Close any open snackbar to avoid focus remaining on elements that will be aria-hidden
-    setSnackbar((s) => ({ ...s, open: false }));
-    // Blur the currently focused element to prevent aria-hidden focus conflicts
-    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-    setOpen(true);
-  };
+  return (
+    // ... (rest of the JSX)
+    <Box sx={{ height: 400 }}>
+      {/* No need for the `isLoading` check here anymore */}
+      <DataGrid
+        rows={filteredRows}
+        columns={columns}
+        // ... (props)
+      />
+    </Box>
+    // ... (rest of the JSX)
+  );
+};
+Use code with caution.
 
-  const handleClose = () => {
-    setOpen(false);
-  };
+AddUserAcess component loader
+For the AddUserAcess component, the loader will fetch the data for roles, departments, and modules in parallel. 
+javascript
+// src/components/AddUserAccess.jsx
+import { useLoaderData } from "react-router-dom";
+import { QueryClient, useQuery } from "@tanstack/react-query";
+import api from "../api";
+// ... (other imports)
 
-  const addRow = () => {
-    const newId = rows.length > 0 ? Math.max(...rows.map((r) => r.id)) + 1 : 1;
-    setRows([...rows, { id: newId, value: "" }]);
-  };
+// Create a query client instance for the loader
+const queryClient = new QueryClient();
 
-  const handleRowChange = (id, newValue) => {
-    setRows(rows.map((row) => (row.id === id ? { ...row, value: newValue } : row)));
-  };
+const fetchRoles = () => api.get("Module/roles").then(res => res.data);
+const fetchDepartments = () => api.get("Module/department-names").then(res => res.data);
+const fetchModules = () => api.get("Module/modules").then(res => res.data);
 
-  const removeRow = (id) => {
-    setRows(rows.filter((row) => row.id !== id));
-  };
+export const loader = async () => {
+  const rolesPromise = queryClient.ensureQueryData({ queryKey: ['roles'], queryFn: fetchRoles });
+  const departmentsPromise = queryClient.ensureQueryData({ queryKey: ['departments'], queryFn: fetchDepartments });
+  const modulesPromise = queryClient.ensureQueryData({ queryKey: ['modules'], queryFn: fetchModules });
 
-  const openSnackbar = (message, severity = "warning") => {
-    setSnackbar({ open: true, message, severity });
-  };
+  return Promise.allSettled([rolesPromise, departmentsPromise, modulesPromise]);
+};
 
-  const handleSubmission = async (e) => {
-    e.preventDefault();
+const AddUserAcess = () => {
+  // Use useQuery hooks to access the cached data, no pending state needed.
+  const { data: roles = [] } = useQuery({ queryKey: ['roles'] });
+  const { data: departments = [] } = useQuery({ queryKey: ['departments'] });
+  const { data: modules = [] } = useQuery({ queryKey: ['modules'] });
 
-    const nextErrors = {};
-    if (!mainName.trim()) {
-      nextErrors.mainName = "Main Name is required";
-    }
-
-    if (Object.keys(nextErrors).length) {
-      setErrors(nextErrors);
-      openSnackbar("Please fill the required field.", "warning");
-      return;
-    }
-
-    setErrors({});
-    const payload = {
-    moduleName: mainName.trim(), 
-    subModules: rows .map(r => r.value.trim()) .filter(v => v.length > 0) .map(v => ({ subName: v })), };
-    console.log(payload);
-    createModule.mutate(payload);
-    setOpen(false);
-    
-  };
-  const options = [
-      { label: 'Option 1', year: 1994 },
-      { label: 'Option 2', year: 1995 },
-      { label: 'Option 3', year: 1996 },
-  ]
-
-  const routingItems = [
-    { key: 'pr_endorsement', label: 'PR Endorsement', path: '/routing/pr_endorsemnet' },
-    { key: 'po_endorsement', label: 'PO Endorsement', path: '/routing/po_endorsemnet' },
-    { key: 'quotation_endorsement', label: 'Quotation Endorsement', path: '/routing/quotation_endorsemnet' },
-    { key: 'coc_endorsement', label: 'COC Endorsement', path: '/routing/coc_endorsemnet' },
-    { key: 'pr_approval', label: 'PR Approval', path: '/routing/pr_approval' },
-    { key: 'po_approval', label: 'PO Approval', path: '/routing/po_approval' },
-    { key: 'quotation_approval', label: 'Quotation Approval', path: '/routing/quotation_approval' },
-    { key: 'coc_approval', label: 'COC Approval', path: '/routing/coc_approval' },
-  ];
-
-  const [selectedRouting, setSelectedRouting] = useState([]);
-
-  const allRoutingSelected = selectedRouting.length === routingItems.length && routingItems.length > 0;
-  const someRoutingSelected = selectedRouting.length > 0 && !allRoutingSelected;
-
-  const handleToggleAllRouting = (checked) => {
-    setSelectedRouting(checked ? routingItems.map((i) => i.key) : []);
-  };
-
-  const handleToggleRoutingItem = (key, checked) => {
-    setSelectedRouting((prev) =>
-      checked ? Array.from(new Set([...prev, key])) : prev.filter((k) => k !== key)
-    );
-  };
+  const [selectedModules, setSelectedModules] = useState([]);
+  const [form, setForm] = useState({
+    DepartmentId: "",
+    RoleId: "",
+  });
+  // ... (rest of the component)
 
   return (
     <>
-      <Box p={3}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h5" component="h5" fontWeight="bold">
-            User Access Control
-          </Typography>
-          <Button variant="contained" startIcon={<AddCircleIcon />} onClick={handleOpen}>
-            Add Access
-          </Button>
-        </Stack>
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={4000}
-          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-          anchorOrigin={{ vertical: "top", horizontal: "right" }}
-          sx={{ zIndex: (theme) => theme.zIndex.modal + 1 }}
-        >
-          <Alert
-            onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-            severity={snackbar.severity}
-            sx={{ width: "100%" }}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-      </Box>
-
-      <BootstrapDialog
-        container={() => document.getElementById('root')}
-        onClose={handleClose}
-        aria-labelledby="customized-dialog-title"
-        open={open}
-        fullWidth
-        maxWidth="lg"
-        PaperProps={{
-          component: "form",
-          onSubmit: handleSubmission,
-          noValidate: true,
-        }}
-      >
-        <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title">
-          Set Up Access
-        </DialogTitle>
-        <IconButton
-          aria-label="close"
-          onClick={handleClose}
-          sx={(theme) => ({
-            position: "absolute",
-            right: 8,
-            top: 8,
-            color: theme.palette.grey[500],
-          })}
-        >
-          <CloseIcon />
-        </IconButton>
-
-        <DialogContent dividers >
-            <Grid container spacing={2}>
-                <Grid size={6}>
-                 <Autocomplete
-                    disablePortal
-                    fullWidth
-                    options={options}
-                    renderInput={(params) => <TextField {...params} label="Department" />}
-                    />
-                </Grid>
-                <Grid size={6}>
-                    <Autocomplete
-                        disablePortal
-                        fullWidth
-                        options={options}
-                        renderInput={(params) => <TextField {...params} label="Roles" />}
-                        />
-                </Grid>
-                <Grid size={12}>
-                    <ListItem disablePadding>
-                        <ListItemButton onClick={handleTogglePage}>
-                            <ListItemIcon sx={{ color: "#101010ff" }}>
-                              <Checkbox
-                                edge="start"
-                                checked={allRoutingSelected}
-                                indeterminate={someRoutingSelected}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  handleToggleAllRouting(e.target.checked);
-                                }}
-                              />
-                            </ListItemIcon>
-                            <ListItemText primary="Routing Approval" /> 
-                            {page? <ExpandLess /> : <ExpandMore />}
-                        </ListItemButton>
-                    </ListItem>
-                        <Collapse in={page && open} timeout="auto" unmountOnExit>
-                            <List component="div" disablePadding>
-                              {routingItems.map((item) => (
-                                <ListItem key={item.key} disablePadding sx={{ pl: 4 }}>
-                                  <ListItemButton onClick={() => navigate(item.path)}>
-                                    <ListItemIcon sx={{ color: "#101010ff" }}>
-                                      <Checkbox
-                                        edge="start"
-                                        checked={selectedRouting.includes(item.key)}
-                                        onClick={(e) => e.stopPropagation()}
-                                        onChange={(e) => {
-                                          e.stopPropagation();
-                                          handleToggleRoutingItem(item.key, e.target.checked);
-                                        }}
-                                        tabIndex={-1}
-                                        disableRipple
-                                      />
-                                    </ListItemIcon>
-                                    <ListItemText primary={item.label} />
-                                  </ListItemButton>
-                                </ListItem>
-                              ))}
-                            </List>
-                        </Collapse>
-                </Grid>
-            </Grid>
-        </DialogContent>
-
-        <DialogActions>
-          <Button variant="contained" type="submit" endIcon={<SendIcon />}>
-            Submit
-          </Button>
-        </DialogActions>
-      </BootstrapDialog>
+      {/* No need for the loading spinner or error alert from `isPending` */}
+      <form onSubmit={handleSubmission}>
+        {/* ... (rest of the JSX) */}
+      </form>
     </>
   );
 };
+Use code with caution.
 
-function NavItem({ icon, label, onClick, open, indent = false }) {
-  return (
-    <ListItem disablePadding>
-      <ListItemButton onClick={onClick} sx={indent ? { pl: 4 } : {}}>
-        <ListItemIcon sx={{ color: "#101010ff" }}>{icon}</ListItemIcon>
-        {open && <ListItemText primary={label} />}
-      </ListItemButton>
-    </ListItem>
-  );
-}
+3. Update the entry point
+Finally, in your main application file (main.jsx or index.js), you will use the RouterProvider to provide the router to your application. 
+javascript
+// src/main.jsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { RouterProvider } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { router } from "./router"; // Import the router configuration
 
-export default Acess;
+const queryClient = new QueryClient();
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
+  </React.StrictMode>,
+);

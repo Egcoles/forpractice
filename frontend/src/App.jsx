@@ -8,11 +8,12 @@ import Users from "./pages/maintenance/Users";
 import CreateUser from "./pages/maintenance/CreateUser";
 import Role from "./pages/maintenance/Role";
 import Module from "./pages/module/modules";
-import Acess from "./pages/access/UserAcess";
+import Access from "./pages/Access";
+import AddUserAcess from "./pages/Access/AddUserAccess";
 import PurchaseRequisition from "./pages/PurchaseRequisition";
 import Quotation from "./pages/Quotation";
-import CreatePR from "./pages/PR/createPR";
 import CreateQuotation from "./pages/Quotation/createQuotation";
+import CreatePR from "./pages/PR/createPR";
 import Department from "./pages/maintenance/department";
 import RequireAuth from "./auths/authentication";
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -22,8 +23,9 @@ import connection from "./HubConnection/SignalRConn";
 function App() {
   return (
     <BrowserRouter>
-      <InterceptorProvider />
+      
        <ToastContainer position="top-right" autoClose={3000} />
+       <InterceptorProvider />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LoginPage />} />
@@ -34,15 +36,13 @@ function App() {
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile" element={<Profile />} />
-              <Route path ="/pr" element={<PurchaseRequisition />} />
-              <Route path ="/quotation" element={<Quotation />} />
               <Route path ="module/modules" element={<Module />} />
-              <Route path ="access/UserAcess" element={<Acess />} />
-
-
-              {/* PR Routes */}
+              <Route path ="/pr" element={<PurchaseRequisition />} />
               <Route path="/pr/CreatePR" element={<CreatePR/>} />
+              <Route path ="/quotation" element={<Quotation />} />
               <Route path="/quotation/createQuotation" element={<CreateQuotation/>} />
+              <Route path ="/access" element={<Access />} />
+              <Route path ="/access/AddUserAccess" element={<AddUserAcess />} />
 
               {/* Maintenance Routes */}              
               <Route path="/maintenance/users" element={<Users />} />

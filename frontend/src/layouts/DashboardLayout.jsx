@@ -418,7 +418,7 @@ const upperCamelCasePathnames = pathnames.map(word => word.charAt(0).toUpperCase
               </List>
             </Collapse>
              <NavItem icon={<RoomPreferencesIcon />} label="Modules" open={open} onClick={() => navigate("module/modules")} />
-             <NavItem icon={<KeyIcon />} label="User Access" open={open} onClick={() => navigate("access/UserAcess")} />
+             <NavItem icon={<KeyIcon />} label="User Access" open={open} onClick={() => navigate("/Access")} />
           </List>
 
           {open && (
