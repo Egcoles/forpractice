@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useDepartmentNames } from "../../hooks/useDepartmentNames";
 import { useRoles } from "../../hooks/useRoles";
-import { useModles } from "../../hooks/useModules";
+import { useLoaderData } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../api";
 import {
@@ -16,17 +16,19 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
+  FormControlLabel,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
-import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
-import FormControlLabel from '@mui/material/FormControlLabel';
-
-
+import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
 const AddUserAcess = () => {
   const queryClient = useQueryClient();
   const { data: roles = [], isLoading: isRolesLoading } = useRoles();
-  const { data: departments = [], isLoading: isDeptLoading, isError: isDeptError } = useDepartmentNames();
-  const { data: modules = [], isPending: isModulesPending, isError: isModulesError, error: modulesError } = useModles();
+  const {
+    data: departments = [],
+    isLoading: isDeptLoading,
+    isError: isDeptError,
+  } = useDepartmentNames();
+  const modules = useLoaderData();
 
   const [selectedModules, setSelectedModules] = useState([]);
   const [form, setForm] = useState({
@@ -49,10 +51,10 @@ const AddUserAcess = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['moduleAccessPermissions'] });
+      queryClient.invalidateQueries({ queryKey: ["moduleAccessPermissions"] });
       setForm({
-        DepartmentId: '',
-        RoleId: '',
+        DepartmentId: "",
+        RoleId: "",
       });
       setSelectedModules([]);
       document.body.focus();
@@ -62,7 +64,6 @@ const AddUserAcess = () => {
       openSnackbar(`Submission failed: ${err.message}`, "error");
     },
   });
-
 
   const handleSelectedItemsChange = (event, itemIds) => {
     setSelectedModules(itemIds);
@@ -84,64 +85,61 @@ const AddUserAcess = () => {
       return;
     }
 
+    // I-filter at i-reformat ang selectedModules para lang sa mga sub-module
+    const validSelectedModules = selectedModules.filter((id) => {
+      // Tiyakin na ang ID ay may hyphen at parehong bahagi ay numero
+      const ids = id.split("-");
+      // Tiyakin na dalawang bahagi lang at parehong numero
+      return (
+        ids.length === 2 && !isNaN(parseInt(ids[0])) && !isNaN(parseInt(ids[1]))
+      );
+    });
+
+    if (validSelectedModules.length === 0) {
+      openSnackbar("Please select at least one valid module.", "warning");
+      return;
+    }
+
     const formData = {
       DepartmentId: form.DepartmentId,
       RoleId: form.RoleId,
-      selectedModules: selectedModules,
+      selectedModules: validSelectedModules, // Gamitin ang na-filter na listahan
     };
 
     console.log("Submitting form data:", formData);
     submitMutation.mutate(formData);
   };
 
-
   const getItemId = (item) => {
-      if (!item) {
-        return `invalid-item-${Date.now()}`;
-      }
-    
-      if (item.subModuleId !== undefined) {
-        return `sub-${item.mainId}-${item.subModuleId}`;
-      }
-     
-      if (item.mainId !== undefined && item.mainId !== null) {
-        return `main-${item.mainId}`;
-      }
-      
-      return `unknown-${Math.random()}`;
-    };
+    // Para lang sa mga sub-module ang ibabalik na ID
+    if (item.subModuleId !== undefined) {
+      return `${item.mainId}-${item.subModuleId}`;
+    }
+    // Para sa mga main modules, gumamit ng ibang prefix
+    if (item.mainId !== undefined && item.mainId !== null) {
+      return `parent-${item.mainId}`; // Hindi ito mapipili ng filter sa handleSubmission
+    }
+
+    return `unknown-${Math.random()}`;
+  };
 
   const getItemLabel = (item) => {
-    return item?.moduleName || item?.subName || '';
+    return item?.moduleName || item?.subName || "";
   };
 
   const getItemChildren = (item) => {
     return item?.subModules || [];
   };
 
-
-  // --- CONDITIONAL RENDERING ---
-  // Ensure that all required data is loaded before rendering the main form.
-  if (isRolesLoading || isDeptLoading || isModulesPending) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (isDeptError || isModulesError) {
-    return <Alert severity="error">Failed to fetch data.</Alert>;
-  }
-
-  if (!Array.isArray(modules)) {
-      return <Alert severity="error">Data is not in the expected format.</Alert>;
-  }
-  
   return (
     <>
       <Box p={3}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={2}
+        >
           <Typography variant="h5" component="h5" fontWeight="bold">
             Set User Access
           </Typography>
@@ -169,7 +167,9 @@ const AddUserAcess = () => {
               disablePortal
               fullWidth
               options={roles}
-              getOptionLabel={(option) => option?.roleName || `Role ${option?.id}`}
+              getOptionLabel={(option) =>
+                option?.roleName || `Role ${option?.id}`
+              }
               value={roles.find((d) => d.id === form.RoleId) || null}
               onChange={(event, newValue) => {
                 setForm((prev) => ({
@@ -177,27 +177,35 @@ const AddUserAcess = () => {
                   RoleId: newValue ? newValue.id : "",
                 }));
               }}
-              renderInput={(params) => <TextField {...params} label="Role" required />}
+              renderInput={(params) => (
+                <TextField {...params} label="Role" required />
+              )}
               isOptionEqualToValue={(option, value) => option.id === value.id}
             />
           </Grid>
           <Grid size={6}>
             <Autocomplete
               options={departments}
-              getOptionLabel={(option) => option?.departmentName || `Department ${option?.id}`}
-              value={departments.find((d) => d.id === form.DepartmentId) || null}
+              getOptionLabel={(option) =>
+                option?.departmentName || `Department ${option?.id}`
+              }
+              value={
+                departments.find((d) => d.id === form.DepartmentId) || null
+              }
               onChange={(event, newValue) => {
                 setForm((prev) => ({
                   ...prev,
                   DepartmentId: newValue ? newValue.id : "",
                 }));
               }}
-              renderInput={(params) => <TextField {...params} label="Department" required />}
+              renderInput={(params) => (
+                <TextField {...params} label="Department" required />
+              )}
               isOptionEqualToValue={(option, value) => option.id === value.id}
             />
           </Grid>
         </Grid>
-        <div style={{ width: '100%' }}>
+        <div style={{ width: "100%" }}>
           <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
             <FormControlLabel
               control={
@@ -228,7 +236,7 @@ const AddUserAcess = () => {
               label="Auto select Main modules"
             />
           </Stack>
-          <Box sx={{ height: 256, minWidth: 250, overflowY: 'auto' }}>
+          <Box sx={{ height: 256, minWidth: 250, overflowY: "auto" }}>
             <RichTreeView
               items={modules}
               getItemId={getItemId}
@@ -242,7 +250,7 @@ const AddUserAcess = () => {
             />
           </Box>
         </div>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
           <Button
             variant="contained"
             type="submit"

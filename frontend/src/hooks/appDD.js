@@ -1,8 +1,3 @@
-//NOT USED CODE 
-//THIS CODE IS FOR REFFERENCE ONLY 
-
-
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import InterceptorProvider from "./components/InterceptorProvider"; 
 import LoginPage from "./pages/LoginPage";

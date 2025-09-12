@@ -33,7 +33,6 @@ const Access = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
-  // Destructure `isPending` instead of `isLoading` for better state management
   const { data: modules = [], isPending, isError, error } = useQuery({
     queryKey: ["modules"],
     queryFn: async () => {
@@ -128,8 +127,8 @@ const Access = () => {
           <Typography variant="h5" component="h5" fontWeight="bold">
             User Access Control
           </Typography>
-          <Button variant="contained" onClick={() => navigate('/access/AddUserAccess')}>
-            Add Access
+          <Button variant="contained" onClick={() => navigate('AddUserAccess')}>
+            <AddCircleIcon sx={{mr:2}} /> Add Access
           </Button>
         </Stack>
         <Divider sx={{ my: 2, borderColor: 'primary.main' }} />
@@ -164,7 +163,7 @@ const Access = () => {
               pagination: { paginationModel: { pageSize: 5, page: 0 } },
             }}
             disableRowSelectionOnClick
-            getRowId={(row) => row.roleId}
+            getRowId={(row) => `${row.roleId}-${row.selectedModules}`}
           />
         )}
       </Box>

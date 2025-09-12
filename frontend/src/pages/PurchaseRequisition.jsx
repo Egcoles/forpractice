@@ -176,7 +176,7 @@ const getStatusColor = (status) => {
         <Typography variant="h5" component="h5" fontWeight="bold">
           Purchase Requisition
         </Typography>
-        <Button variant="contained" onClick={() => navigate('/pr/createPR')}>
+        <Button variant="contained" onClick={() => navigate('CreatePR')}>
           <CreateIcon />
           Create PR
         </Button>

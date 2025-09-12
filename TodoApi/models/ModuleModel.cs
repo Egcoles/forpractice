@@ -26,6 +26,7 @@ namespace TodoApi.Models
     }
     public class ModuleAccessResponseDto
     {
+        public int UniqueKey { get; set; }
         public int DepartmentId { get; set; }
         public string DepartmentName { get; set; } = string.Empty;
         public int RoleId { get; set; }

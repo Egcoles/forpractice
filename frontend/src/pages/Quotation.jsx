@@ -195,7 +195,7 @@ const columns = [
         <Typography variant="h5" component="h5" fontWeight="bold">
           Quotation
         </Typography>
-        <Button variant="contained" onClick={() => navigate('/quotation/createQuotation')}>
+        <Button variant="contained" onClick={() => navigate('CreateQuotation')}>
           <CreateIcon />
           Create Quotation
         </Button>
@@ -242,13 +242,7 @@ const columns = [
           
         />
     </Box>
-    
-
-    
-     
-    
-      
-  
+ 
   );
 };
 

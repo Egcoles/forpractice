@@ -365,10 +365,10 @@ const upperCamelCasePathnames = pathnames.map(word => word.charAt(0).toUpperCase
         >
           <List>
             <NavItem icon={<HomeIcon />} label="Dashboard" open={open} onClick={() => navigate("/dashboard")} />
-            <NavItem icon={<ListAltIcon />} label="PR" open={open} onClick={() => navigate("/pr")} />
-            <NavItem icon={<EditSquareIcon />} label="Quotation" open={open} onClick={() => navigate("/quotation")} />
-            <NavItem icon={<EditSquareIcon />} label="PO Client" open={open} onClick={() => navigate("/client")} />
-            <NavItem icon={<ListAltIcon />} label="PO Supplier" open={open} onClick={() => navigate("/supplier")} />
+            <NavItem icon={<ListAltIcon />} label="PR" open={open} onClick={() => navigate("pr")} />
+            <NavItem icon={<EditSquareIcon />} label="Quotation" open={open} onClick={() => navigate("quotation")} />
+            <NavItem icon={<EditSquareIcon />} label="PO Client" open={open} onClick={() => navigate("client")} />
+            <NavItem icon={<ListAltIcon />} label="PO Supplier" open={open} onClick={() => navigate("supplier")} />
             <ListItem disablePadding>
               <ListItemButton onClick={hanldeToggleRouiting}>
                 <ListItemIcon sx={{ color: "#fff" }}>
@@ -409,16 +409,16 @@ const upperCamelCasePathnames = pathnames.map(word => word.charAt(0).toUpperCase
             </ListItem>
             <Collapse in={maintenanceOpen && open} timeout="auto" unmountOnExit>
               <List component="div" disablePadding>
-                <NavItem icon={<GroupIcon />} label="Users" open={open} indent onClick={() => navigate("/maintenance/users")} />
-                <NavItem icon={<AssignmentIndIcon />} label="Roles" open={open} indent onClick={() => navigate("/maintenance/roles")} />
-                <NavItem icon={<ApartmentIcon />} label="Department" open={open} indent onClick={() => navigate("/maintenance/department")} />
-                <NavItem icon={<ViewListIcon />} label="Master List" open={open} indent onClick={() => navigate("/maintenance/master-list")} />
-                <NavItem icon={<EmailIcon />} label="SMTP" open={open} indent onClick={() => navigate("/maintenance/smtp")} />
-                <NavItem icon={<BookIcon />} label="System Logs" open={open} indent onClick={() => navigate("/maintenance/system-logs")} />
+                <NavItem icon={<GroupIcon />} label="Users" open={open} indent onClick={() => navigate("users")} />
+                <NavItem icon={<AssignmentIndIcon />} label="Roles" open={open} indent onClick={() => navigate("roles")} />
+                <NavItem icon={<ApartmentIcon />} label="Department" open={open} indent onClick={() => navigate("department")} />
+                <NavItem icon={<ViewListIcon />} label="Master List" open={open} indent onClick={() => navigate("master-list")} />
+                <NavItem icon={<EmailIcon />} label="SMTP" open={open} indent onClick={() => navigate("smtp")} />
+                <NavItem icon={<BookIcon />} label="System Logs" open={open} indent onClick={() => navigate("system-logs")} />
               </List>
             </Collapse>
-             <NavItem icon={<RoomPreferencesIcon />} label="Modules" open={open} onClick={() => navigate("module/modules")} />
-             <NavItem icon={<KeyIcon />} label="User Access" open={open} onClick={() => navigate("/Access")} />
+             <NavItem icon={<RoomPreferencesIcon />} label="Modules" open={open} onClick={() => navigate("modules")} />
+             <NavItem icon={<KeyIcon />} label="User Access" open={open} onClick={() => navigate("Access")} />
           </List>
 
           {open && (

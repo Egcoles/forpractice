@@ -1,10 +1,5 @@
-import { useQuery  } from "@tanstack/react-query";
-import api from "../api";
-
-const fetchModules = async () => {
-    const {data} = await api.get("Module/modules");
-    return data;
-};
+import { useQuery } from "@tanstack/react-query";
+import { fetchModules } from "../api/modulesApi";
 
 export const useModles = () => {
     return useQuery({
@@ -13,4 +8,3 @@ export const useModles = () => {
         staleTime: 100 * 60 * 5,
     });
 };
-
