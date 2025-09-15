@@ -71,7 +71,7 @@ namespace TodoApi.Controllers
                 return StatusCode(500, new { message = "An error occurred while retrieving purchase requests.", error = ex.Message });
             }
         }
-
+        // [Authorize(Policy = "RequirePRDisplayPermission")]
         [HttpGet("PRTableDisplay")]
         public async Task<IActionResult> GetPRTableDisplay()
         {
@@ -115,7 +115,7 @@ namespace TodoApi.Controllers
                 Console.WriteLine($"Error in GetPRDetailsById: {ex.Message}");
                 return StatusCode(500, new { message = "An error occurred while retrieving purchase requests.", error = ex.Message });
             }
-       }
+        }
 
     }
 }

@@ -32,6 +32,7 @@ builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    
 })
 .AddJwtBearer(options =>
 {
@@ -62,6 +63,16 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// **--- Authorization Policy here ---**
+builder.Services.AddAuthorizationBuilder().AddPolicy("RequireEncoderRole", policy =>
+{
+    policy.RequireClaim("RoleId", "31");
+});
+
+builder.Services.AddAuthorizationBuilder().AddPolicy("RequirePRDisplayPermission", policy =>
+{
+    policy.RequireClaim("Permission", "module:PR:display");
+});
 
 // CORS Policy - Allow only known origin 
 builder.Services.AddCors(options =>
@@ -92,6 +103,7 @@ app.UseMiddleware<JwtExceptionMiddleware>();
 // Enable authentication & authorization
 app.UseAuthentication();
 app.UseAuthorization();
+
 
 // Map controller routes
 app.MapControllers();

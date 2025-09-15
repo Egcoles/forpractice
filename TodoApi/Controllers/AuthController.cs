@@ -31,7 +31,7 @@ public class AuthController(IConfiguration config, IAuthRepository authRepo) : C
             return BadRequest(new { error = "Registration failed. Username may already exist." });
         Console.WriteLine($"[REGISTER] Failed to register user: {user.Username}");
         return Ok(new { message = "Registered successfully!" });
-        
+
     }
 
     [HttpPost("login")]
@@ -40,25 +40,53 @@ public class AuthController(IConfiguration config, IAuthRepository authRepo) : C
         if (string.IsNullOrEmpty(user.Username))
             return BadRequest(new { error = "Username is required" });
 
-        var foundUser = await _authRepo.GetUserByUsernameAsync(user.Username);
+        var userPermissions = await _authRepo.GetUserByUsernameAsync(user.Username);
 
-        if (foundUser == null)
+        // Check if the user was found and has a User object
+        if (userPermissions == null || userPermissions.User == null)
+        {
             return Unauthorized(new { error = "User not found" });
+        }
+
+        var foundUser = userPermissions.User;
 
         if (!VerifyPassword(user.Password!, foundUser.Password!))
             return Unauthorized(new { error = "Invalid password" });
         Console.WriteLine($"[LOGIN] UserID: {foundUser.UserId}, Username: {foundUser.Username}, RoleID: {foundUser.RoleId}");
+
+        // Log the permissions of the user
+        if (userPermissions.Permissions != null && userPermissions.Permissions.Count != 0)
+        {
+            Console.WriteLine($"[LOGIN] Permissions for user '{foundUser.Username}': {string.Join(", ", userPermissions.Permissions)}");
+        }
+        else
+        {
+            Console.WriteLine($"[LOGIN] User '{foundUser.Username}' has no permissions assigned.");
+        }
+
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(_config["Jwt:Key"]!);
 
+        // Create a list of claims for the JWT
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, foundUser.UserId.ToString()),
+            new(ClaimTypes.Name, foundUser.Username ?? string.Empty),
+            new("RoleId", foundUser.RoleId?.ToString() ?? string.Empty)
+        };
+
+        // Add each permission to the claims
+        if (userPermissions.Permissions != null)
+        {
+            foreach (var permission in userPermissions.Permissions)
+            {
+                claims.Add(new Claim("Permission", permission));
+            }
+        }
+
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity([
-                new Claim(ClaimTypes.NameIdentifier, foundUser.UserId.ToString()),
-                new Claim(ClaimTypes.Name, foundUser.Username ?? string.Empty),
-                new Claim("RoleId", foundUser.RoleId.ToString() ?? string.Empty)
-            ]),
-            
+            Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddHours(10),
             Issuer = _config["Jwt:Issuer"],
             Audience = _config["Jwt:Audience"],
@@ -76,11 +104,12 @@ public class AuthController(IConfiguration config, IAuthRepository authRepo) : C
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddHours(1)
+            Expires = DateTime.UtcNow.AddHours(10)
         });
 
         return Ok(new { message = "Login successful" });
     }
+
 
     [HttpPost("logout")]
     public IActionResult Logout()
@@ -88,17 +117,29 @@ public class AuthController(IConfiguration config, IAuthRepository authRepo) : C
         Response.Cookies.Delete("token");
         return Ok(new { message = "Logged out" });
     }
-    
+
     [Authorize]
     [HttpGet("me")]
     public IActionResult Me()
     {
-        var identity = User.Identity;
-        if (identity == null || !identity.IsAuthenticated)
+        if (User.Identity is not ClaimsIdentity identity || !identity.IsAuthenticated)
+        {
             return Unauthorized(new { error = "Not authenticated" });
+        }
 
+       
         var username = identity.Name;
-        return Ok(new { username });
+        var roleIdClaim = identity.FindFirst("RoleId");
+        var roleId = roleIdClaim != null ? int.Parse(roleIdClaim.Value) : (int?)null;
+        var permissions = identity.FindAll("Permission")
+                                  .Select(c => c.Value)
+                                  .ToList();
+        return Ok(new
+        {
+            username,
+            roleId,
+            permissions
+        });
     }
 
 

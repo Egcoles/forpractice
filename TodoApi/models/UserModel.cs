@@ -13,8 +13,8 @@ namespace TodoApi.Models
         public string FirstName { get; set; } = "";
         public string LastName { get; set; } = "";
         public string Position { get; set; } = string.Empty;
-        public int ? DepartmentId { get; set; }
-        public int ? RoleId { get; set; }
+        public int? DepartmentId { get; set; }
+        public int? RoleId { get; set; }
         public int EndorserId { get; set; } = 0;
         public int ApproverId { get; set; } = 0;
         public string UserStatus { get; set; } = "Active";
@@ -22,6 +22,18 @@ namespace TodoApi.Models
         public string Signature { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    public class PermissionModel
+    {
+        public string? MainID { get; set; }
+        public int? SubModuleID { get; set; }
+    }
+
+    public class UserWithPermissions
+    {
+        public UserModel? User { get; set; }
+        public List<string> Permissions { get; set; } = new List<string>();
     }
 
     public class UserSummaryModel
@@ -40,7 +52,7 @@ namespace TodoApi.Models
     {
         public int UserId { get; set; }
         public string FullName { get; set; } = string.Empty;
-         
+
     }
     public class RoutingModel
     {

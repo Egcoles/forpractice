@@ -1,3 +1,4 @@
+using System.Data;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using TodoApi.Data;
@@ -30,7 +31,7 @@ namespace TodoApi.Repositories
             }
         }
 
-        public async Task<UserModel?> GetUserByUsernameAsync(string username)
+        public async Task<UserWithPermissions?> GetUserByUsernameAsync(string username)
         {
             var sql = "sp_login_user";
             using var connection = _context.CreateConnection();
@@ -38,10 +39,34 @@ namespace TodoApi.Repositories
             var parameters = new DynamicParameters();
             parameters.Add("@Username", username);
 
-            var result = await connection.QueryFirstOrDefaultAsync<UserModel>(sql, parameters,
-                commandType: System.Data.CommandType.StoredProcedure);
+            var userWithPermissionsDictionary = new Dictionary<int, UserWithPermissions>();
 
-            return result;
+            var result = await connection.QueryAsync<UserModel, dynamic, UserWithPermissions>(
+            sql,
+            (user, permission) =>
+            {
+             
+                if (!userWithPermissionsDictionary.TryGetValue(user.UserId, out var userWithPermissions))
+                {
+                    userWithPermissions = new UserWithPermissions { User = user };
+                    userWithPermissionsDictionary.Add(user.UserId, userWithPermissions);
+                }
+
+                
+                if (permission.MainID != null)
+                {
+                    userWithPermissions.Permissions.Add($"module:{permission.MainID}:{permission.SubModuleID}");
+                }
+
+                return userWithPermissions;
+            },
+                    param: parameters,
+                    commandType: CommandType.StoredProcedure,
+                    splitOn: "MainID"
+                );
+
+            return userWithPermissionsDictionary.Values.FirstOrDefault();
+
         }
     }
 }

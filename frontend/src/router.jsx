@@ -2,7 +2,7 @@ import { createBrowserRouter, redirect } from "react-router-dom";
 
 // Auth related
 import RequireAuth from "./auths/authentication";
-
+import ProtectedRoute from "./auths/ProtectedRoute";
 // Layouts
 import DashboardLayout from "./layouts/DashboardLayout";
 import RootLayout from "./layouts/RootLayout";
@@ -23,6 +23,7 @@ import Users from "./pages/maintenance/Users";
 import CreateUser from "./pages/maintenance/CreateUser";
 import Role from "./pages/maintenance/Role";
 import Department from "./pages/maintenance/department";
+import ForbiddenPage from "./403";
 
 // Data Fetching Functions
 import { fetchModules } from "./api/modulesApi";
@@ -66,6 +67,7 @@ const router = createBrowserRouter([
     path: "/register",
     Component: RegisterPage,
   },
+  {path: "403", Component: ForbiddenPage },
 
   // Protected routes
   {
@@ -115,6 +117,7 @@ const router = createBrowserRouter([
           { path: "create", Component: CreateUser },
           { path: "roles", Component: Role },
           { path: "department", Component: Department },
+          
         ],
       },
     ],

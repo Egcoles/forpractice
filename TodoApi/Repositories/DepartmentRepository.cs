@@ -19,7 +19,7 @@ namespace TodoApi.Repositories
                 commandType: CommandType.StoredProcedure
             );
         }
-       
+
         public async Task<IEnumerable<DepartmentModel>> GetAllDepartmentNamesAsync()
         {
             var departments = await GetAllDepartmentsAsync();
@@ -39,7 +39,8 @@ namespace TodoApi.Repositories
         }
 
 
-       
+
+
 
     }
 
