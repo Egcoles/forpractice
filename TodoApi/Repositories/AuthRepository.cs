@@ -42,31 +42,52 @@ namespace TodoApi.Repositories
             var userWithPermissionsDictionary = new Dictionary<int, UserWithPermissions>();
 
             var result = await connection.QueryAsync<UserModel, dynamic, UserWithPermissions>(
-            sql,
-            (user, permission) =>
-            {
-             
-                if (!userWithPermissionsDictionary.TryGetValue(user.UserId, out var userWithPermissions))
+                sql,
+                (user, permission) =>
                 {
-                    userWithPermissions = new UserWithPermissions { User = user };
-                    userWithPermissionsDictionary.Add(user.UserId, userWithPermissions);
-                }
+                    if (!userWithPermissionsDictionary.TryGetValue(user.UserId, out var userWithPermissions))
+                    {
+                        userWithPermissions = new UserWithPermissions { User = user };
+                        userWithPermissionsDictionary.Add(user.UserId, userWithPermissions);
+                    }
 
-                
-                if (permission.MainID != null)
-                {
-                    userWithPermissions.Permissions.Add($"module:{permission.MainID}:{permission.SubModuleID}");
-                }
+                    // Allow even if permission is null
+                    userWithPermissions.Permissions.Add(
+                        $"module:{permission?.MainID ?? "null"}:{permission?.SubModuleID ?? "null"}"
+                    );
 
-                return userWithPermissions;
-            },
-                    param: parameters,
-                    commandType: CommandType.StoredProcedure,
-                    splitOn: "MainID"
-                );
+                    return userWithPermissions;
+                },
+                param: parameters,
+                commandType: CommandType.StoredProcedure,
+                splitOn: "MainID"
+            );
 
             return userWithPermissionsDictionary.Values.FirstOrDefault();
 
         }
     }
 }
+
+//trash codes
+//public async Task<int> GetTokenVersionAsync(int userId)
+// {
+//     using var connection = _context.CreateConnection();
+//     var parameters = new { UserId = userId };
+//     return await connection.ExecuteScalarAsync<int>(
+//         "GetTokenVersionByUserId",
+//         parameters,
+//         commandType: CommandType.StoredProcedure
+//     );
+// }
+
+// public async Task IncrementTokenVersionByRoleAndDepartmentAsync(int roleId, int departmentId)
+// {
+//     using var connection = _context.CreateConnection();
+//     var parameters = new { RoleId = roleId, DepartmentId = departmentId };
+//     await connection.ExecuteAsync(
+//         "sp_UpdateTokenVersionByRoleAndDepartment",
+//         parameters,
+//         commandType: CommandType.StoredProcedure
+//     );
+// }

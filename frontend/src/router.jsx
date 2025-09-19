@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import Module from "./pages/module/modules";
 import Access from "./pages/Access";
 import AddUserAcess from "./pages/access/AddUserAccess";
+import EditUserAccess from "./pages/Access/EditUserAccess";
 import PurchaseRequisition from "./pages/PurchaseRequisition";
 import Quotation from "./pages/Quotation";
 import CreateQuotation from "./pages/Quotation/createQuotation";
@@ -109,6 +110,12 @@ const router = createBrowserRouter([
           {
             path: "access/AddUserAccess",
             Component: AddUserAcess,
+            loader: fetchModules,
+            HydrateFallback: () => <div>Loading Access Modules...</div>,
+          },
+          {
+            path: "access/EditUserAccess/:roleId/:departmentId",
+            Component: EditUserAccess, 
             loader: fetchModules,
             HydrateFallback: () => <div>Loading Access Modules...</div>,
           },

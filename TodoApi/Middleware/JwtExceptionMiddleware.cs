@@ -6,14 +6,9 @@ using System.Threading.Tasks;
 
 namespace TodoApi.Middleware
 {
-    public class JwtExceptionMiddleware
+    public class JwtExceptionMiddleware(RequestDelegate next)
     {
-        private readonly RequestDelegate _next;
-
-        public JwtExceptionMiddleware(RequestDelegate next)
-        {
-            _next = next;
-        }
+        private readonly RequestDelegate _next = next;
 
         // Middleware to handle JWT exceptions
         public async Task Invoke(HttpContext context)

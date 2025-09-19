@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TodoApi.Models;
 using TodoApi.Repositories.Interfaces;
+using TodoApi.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace TodoApi.Controllers
 {
@@ -39,10 +41,15 @@ namespace TodoApi.Controllers
             {
                 return BadRequest(new { message = "Request body is required" });
             }
+
             try
             {
                 await _moduleRepository.InsertModuleAsync(model);
                 return Ok(new { message = "Module created successfully" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
@@ -50,6 +57,7 @@ namespace TodoApi.Controllers
                 return StatusCode(500, new { message = "An error occurred while creating the module" });
             }
         }
+
 
         [HttpGet("role-module-permissions")]
         public async Task<IActionResult> GetRoleModulePermissions()
@@ -80,5 +88,60 @@ namespace TodoApi.Controllers
                 return StatusCode(500, new { message = "An error occurred while fetching modules" });
             }
         }
+
+        [HttpGet("edit-module-access/{roleId}/{departmentId}")]
+        public async Task<IActionResult> GetModuleAccess(int roleId, int departmentId)
+        {
+            try
+            {
+                var modules = await _moduleRepository.GetModuleByRoleIDandDepartmentIDAsync(roleId, departmentId);
+                return Ok(modules);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in fetching module access: {ex.Message}");
+                return StatusCode(500, new { message = "An error occurred while fetching module access" });
+            }
+        }
+
+        [HttpPut("update-module-access/{roleId}/{departmentId}")]
+        public async Task<IActionResult> UpdateModuleAccess(int roleId, int departmentId, [FromBody] SyncRoleModuleRequest model, [FromServices] IHubContext<NotificationHub> hubContext)
+        {
+            if (model is null)
+            {
+                return BadRequest(new { message = "Request body is required" });
+            }
+
+            try
+            {
+                model.RoleId = roleId;
+                model.DepartmentId = departmentId;
+
+                // Debug log: check incoming payload
+                Console.WriteLine("=== Incoming Payload ===");
+                Console.WriteLine($"RoleId={model.RoleId}, DepartmentId={model.DepartmentId}");
+                foreach (var p in model.Permissions)
+                {
+                    Console.WriteLine($"MainID={p.MainID}, SubModuleID={(p.SubModuleID.HasValue ? p.SubModuleID.Value.ToString() : "NULL")}");
+                }
+                Console.WriteLine("========================");
+
+                await _moduleRepository.SyncRoleModulePermissionsAsync(model);
+
+                // Fire SignalR event to users match the roleid and departmentid
+                await hubContext.Clients
+                .Group($"role_{roleId}_dept_{departmentId}")
+                .SendAsync("PermissionChanged", "Permission change detected, please re-login.");
+                Console.WriteLine($"[HUB] Sent PermissionChanged to group role_{roleId}_dept_{departmentId}");
+
+                return Ok(new { message = "Module access updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in updating module access: {ex}");
+                return StatusCode(500, new { message = "An error occurred while updating module access" });
+            }
+        }
+
     }
 }

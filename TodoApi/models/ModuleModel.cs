@@ -30,7 +30,26 @@ namespace TodoApi.Models
         public int DepartmentId { get; set; }
         public string DepartmentName { get; set; } = string.Empty;
         public int RoleId { get; set; }
-        public string RoleName { get; set; }  = string.Empty;
-        public string SelectedModules { get; set; }  = string.Empty;
+        public string RoleName { get; set; } = string.Empty;
+        public string SelectedModules { get; set; } = string.Empty;
     }
+
+    public class RoleModulePermission
+    {
+        public int DepartmentID { get; set; }
+        public int RoleID { get; set; }
+        public int? MainID { get; set; }
+        public string MainModuleName { get; set; } = string.Empty;
+        public int? SubModuleID { get; set; }
+        public string SubModuleName { get; set; } = string.Empty;
+    }
+
+    public class SyncRoleModuleRequest
+    {
+        public int DepartmentId { get; set; }
+        public int RoleId { get; set; }
+        public List<RoleModulePermission> Permissions { get; set; } = new();
+    }
+    
+
 }

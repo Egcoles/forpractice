@@ -10,5 +10,8 @@ namespace TodoApi.Repositories.Interfaces
         Task<IEnumerable<MainModel>> GetMainModuleAsync();
         Task<List<MainModel>> PopulateMainModelsAsync();
         Task<IEnumerable<ModuleAccessResponseDto>> GetModuleAccessResponseAsync();
+        Task<IEnumerable<RoleModulePermission>> GetModuleByRoleIDandDepartmentIDAsync(int roleId, int departmentId);
+        Task SyncRoleModulePermissionsAsync(SyncRoleModuleRequest request);
+  
     }
 }

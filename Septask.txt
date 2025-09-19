@@ -1,0 +1,10 @@
+TASK:
+Edit/Update function
+API Security add authorize policy
+Route Protection
+Real-time Update
+
+Problem: When update main id does not include 
+
+Dashboard menu
+-does not update it need to logout just to see the changes of the permissions.

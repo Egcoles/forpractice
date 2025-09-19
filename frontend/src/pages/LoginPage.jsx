@@ -31,9 +31,9 @@ const Login = () => {
     mutationFn: loginUser,
     onSuccess: (data) => {
       if (data.message === "Login successful") {
-        // Clear any cached auth user so the next screen refetches the new user
-        queryClient.removeQueries({ queryKey: ["auth"], exact: true });
-        navigate("/dashboard"); // Redirect immediately after login
+          queryClient.invalidateQueries({ queryKey: ["auth"], });
+        // queryClient.removeQueries({ queryKey: ["auth"], exact: true });
+        navigate("/dashboard"); 
       } else {
         setError(data.message || "Invalid credentials");
       }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TodoApi.Models;
 using TodoApi.Repositories.Interfaces;
+using TodoApi.Authorization;
 
 namespace TodoApi.Controllers
 {
@@ -12,7 +13,7 @@ namespace TodoApi.Controllers
     {
         private readonly IPRRepository _prRepository = prRepository;
 
-        [Authorize]
+        [AuthorizePermission("module:8:7")]
         [HttpPost("create")]
         public async Task<IActionResult> CreatePR([FromBody] PRModel model)
         {
@@ -57,6 +58,7 @@ namespace TodoApi.Controllers
             }
         }
 
+        [AuthorizePermission("module:8:7")]
         [HttpGet("all")]
         public async Task<IActionResult> GetAllPRs()
         {
@@ -71,7 +73,7 @@ namespace TodoApi.Controllers
                 return StatusCode(500, new { message = "An error occurred while retrieving purchase requests.", error = ex.Message });
             }
         }
-        // [Authorize(Policy = "RequirePRDisplayPermission")]
+        [AuthorizePermission("module:8:null")]
         [HttpGet("PRTableDisplay")]
         public async Task<IActionResult> GetPRTableDisplay()
         {
@@ -86,7 +88,7 @@ namespace TodoApi.Controllers
                 return StatusCode(500, new { message = "An error occurred while retrieving purchase requests.", error = ex.Message });
             }
         }
-
+        [AuthorizePermission("module:8:7")]
         [HttpGet("PRDetailsByPRNumber/{PRNumber}")]
         public async Task<IActionResult> GetPRDetailsByPRNumber(string PRNumber)
         {
@@ -101,7 +103,7 @@ namespace TodoApi.Controllers
                 return StatusCode(500, new { message = "An error occurred while retrieving purchase requests.", error = ex.Message });
             }
         }
-
+        [AuthorizePermission("module:8:7")]
         [HttpGet("PRDetailsById/{PRId}")]
         public async Task<IActionResult> GetPRDetailsById(int PRId)
         {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useDepartmentNames } from "../../hooks/useDepartmentNames";
 import { useRoles } from "../../hooks/useRoles";
 import { useLoaderData } from "react-router-dom";
@@ -22,6 +23,8 @@ import SendIcon from "@mui/icons-material/Send";
 import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
 const AddUserAcess = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
   const { data: roles = [], isLoading: isRolesLoading } = useRoles();
   const {
     data: departments = [],
@@ -51,7 +54,7 @@ const AddUserAcess = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["moduleAccessPermissions"] });
+      queryClient.invalidateQueries({ queryKey: ["modules"] });
       setForm({
         DepartmentId: "",
         RoleId: "",
@@ -59,9 +62,11 @@ const AddUserAcess = () => {
       setSelectedModules([]);
       document.body.focus();
       openSnackbar("Module access set successfully!", "success");
+      setTimeout(() => navigate("/dashboard/access"), 1500);
     },
     onError: (err) => {
-      openSnackbar(`Submission failed: ${err.message}`, "error");
+      const errorMsg = err.response?.data?.message || "Submission failed";
+      openSnackbar(errorMsg, "error");
     },
   });
 
@@ -85,13 +90,13 @@ const AddUserAcess = () => {
       return;
     }
 
-    // I-filter at i-reformat ang selectedModules para lang sa mga sub-module
     const validSelectedModules = selectedModules.filter((id) => {
-      // Tiyakin na ang ID ay may hyphen at parehong bahagi ay numero
       const ids = id.split("-");
-      // Tiyakin na dalawang bahagi lang at parehong numero
       return (
-        ids.length === 2 && !isNaN(parseInt(ids[0])) && !isNaN(parseInt(ids[1]))
+        (ids.length === 2 &&
+          !isNaN(parseInt(ids[0])) &&
+          !isNaN(parseInt(ids[1]))) ||
+        (ids.length === 1 && !isNaN(parseInt(ids[0]))) // allow main only
       );
     });
 
@@ -103,7 +108,7 @@ const AddUserAcess = () => {
     const formData = {
       DepartmentId: form.DepartmentId,
       RoleId: form.RoleId,
-      selectedModules: validSelectedModules, // Gamitin ang na-filter na listahan
+      selectedModules: validSelectedModules,
     };
 
     console.log("Submitting form data:", formData);
@@ -111,13 +116,14 @@ const AddUserAcess = () => {
   };
 
   const getItemId = (item) => {
-    // Para lang sa mga sub-module ang ibabalik na ID
+    // For sub-modules: return "mainId-subModuleId"
     if (item.subModuleId !== undefined) {
       return `${item.mainId}-${item.subModuleId}`;
     }
-    // Para sa mga main modules, gumamit ng ibang prefix
+
+    // For main modules: return just the mainId (numeric string)
     if (item.mainId !== undefined && item.mainId !== null) {
-      return `parent-${item.mainId}`; // Hindi ito mapipili ng filter sa handleSubmission
+      return `${item.mainId}`;
     }
 
     return `unknown-${Math.random()}`;

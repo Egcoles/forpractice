@@ -17,7 +17,7 @@ import {
   AddCircle as AddCircleIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  MoreVert as  MoreVertIcon
+  MoreVert as MoreVertIcon,
 } from "@mui/icons-material";
 
 import { DataGrid } from "@mui/x-data-grid";
@@ -26,17 +26,25 @@ const Access = () => {
   const navigate = useNavigate();
 
   const [editMode, setEditMode] = useState(false);
-  const [selectedId, setSelectedId] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [moduleToDelete, setModuleToDelete] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedRow, setSelectedRow] = useState(null);
   const open = Boolean(anchorEl);
 
-  const { data: modules = [], isPending, isError, error } = useQuery({
+  const {
+    data: modules = [],
+    isPending,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["modules"],
     queryFn: async () => {
-      const response = await api.get("Module/role-module-permissions", { withCredentials: true });
+      const response = await api.get("Module/role-module-permissions", {
+        withCredentials: true,
+      });
+      console.log(response.data);
       return response.data || [];
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -44,33 +52,27 @@ const Access = () => {
 
   const filteredRows = useMemo(() => {
     return modules.filter((row) =>
-      [
-        row.roleName || "",
-        row.departmentName || "",
-      ]
-      .join("")
-      .toLowerCase()
-      .includes(searchText.toLowerCase())
+      [row.roleName || "", row.departmentName || ""]
+        .join("")
+        .toLowerCase()
+        .includes(searchText.toLowerCase())
     );
   }, [modules, searchText]);
 
-  const handleClick = (event) => {
+  const handleClick = (event, row) => {
     setAnchorEl(event.currentTarget);
+    setSelectedRow(row);
   };
   const handleClose = () => {
     setAnchorEl(null);
-  };
-
-  const handleEdit = (row) => {
-    setEditMode(true);
-    setSelectedId(row.roleId);
-    //use navigate
+    setSelectedRow(null);
   };
 
   const handleDeleteClick = (row) => {
     setModuleToDelete(row);
     setDeleteConfirmOpen(true);
   };
+
   const handleDeleteConfirm = () => {
     if (moduleToDelete) {
       deleteMutation.mutate(moduleToDelete.roleId);
@@ -88,10 +90,10 @@ const Access = () => {
         <>
           <Button
             id="demo-positioned-button"
-            aria-controls={open ? 'demo-positioned-menu' : undefined}
+            aria-controls={open ? "demo-positioned-menu" : undefined}
             aria-haspopup="true"
-            aria-expanded={open ? 'true' : undefined}
-            onClick={handleClick}
+            aria-expanded={open ? "true" : undefined}
+            onClick={(e) => handleClick(e, params.row)}
           >
             <MoreVertIcon />
           </Button>
@@ -102,16 +104,34 @@ const Access = () => {
             open={open}
             onClose={handleClose}
             anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'left',
+              vertical: "top",
+              horizontal: "left",
             }}
             transformOrigin={{
-              vertical: 'top',
-              horizontal: 'left',
+              vertical: "top",
+              horizontal: "left",
             }}
           >
-            <MenuItem onClick={() => handleEdit(params.row)}><EditIcon /></MenuItem>
-            <MenuItem onClick={() => handleDeleteClick(params.row)} color="error"><DeleteIcon /></MenuItem>
+            <MenuItem
+              onClick={() => {
+                if (selectedRow) {
+                  navigate(
+                    `EditUserAccess/${selectedRow.roleId}/${selectedRow.departmentId}`
+                  );
+                }
+                handleClose();
+              }}
+            >
+              <EditIcon sx={{ mr: 1 }} />
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                if (selectedRow) handleDeleteClick(selectedRow);
+                handleClose();
+              }}
+            >
+              <DeleteIcon />
+            </MenuItem>
           </Menu>
         </>
       ),
@@ -123,15 +143,20 @@ const Access = () => {
   return (
     <>
       <Box p={3}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={2}
+        >
           <Typography variant="h5" component="h5" fontWeight="bold">
             User Access Control
           </Typography>
-          <Button variant="contained" onClick={() => navigate('AddUserAccess')}>
-            <AddCircleIcon sx={{mr:2}} /> Add Access
+          <Button variant="contained" onClick={() => navigate("AddUserAccess")}>
+            <AddCircleIcon sx={{ mr: 2 }} /> Add Access
           </Button>
         </Stack>
-        <Divider sx={{ my: 2, borderColor: 'primary.main' }} />
+        <Divider sx={{ my: 2, borderColor: "primary.main" }} />
         <Stack direction="row" spacing={2} justifyContent="flex-end">
           <TextField
             size="small"
@@ -146,7 +171,12 @@ const Access = () => {
       <Box sx={{ height: 400 }}>
         {/* Check for isPending first */}
         {isPending ? (
-          <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            height="100%"
+          >
             <CircularProgress />
           </Box>
         ) : (
@@ -155,7 +185,7 @@ const Access = () => {
             columns={columns}
             sx={{
               "& .MuiDataGrid-columnHeaderTitle": {
-                fontWeight: 'bold',
+                fontWeight: "bold",
               },
             }}
             pageSizeOptions={[5, 10, 25]}
@@ -163,7 +193,7 @@ const Access = () => {
               pagination: { paginationModel: { pageSize: 5, page: 0 } },
             }}
             disableRowSelectionOnClick
-            getRowId={(row) => `${row.roleId}-${row.selectedModules}`}
+            getRowId={(row) => row.uniqueKey}
           />
         )}
       </Box>

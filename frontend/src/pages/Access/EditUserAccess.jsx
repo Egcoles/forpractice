@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useDepartmentNames } from "../../hooks/useDepartmentNames";
 import { useRoles } from "../../hooks/useRoles";
-import { useLoaderData } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLoaderData, useParams, useNavigate } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../../api";
 import {
   Typography,
@@ -20,15 +20,32 @@ import {
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
-const AddUserAcess = () => {
+
+const EditUserAccess = () => {
+  const { roleId, departmentId } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const isEditMode = !!roleId && !!departmentId;
+
   const { data: roles = [], isLoading: isRolesLoading } = useRoles();
-  const {
-    data: departments = [],
-    isLoading: isDeptLoading,
-    isError: isDeptError,
-  } = useDepartmentNames();
-  const modules = useLoaderData();
+  const { data: departments = [], isLoading: isDeptLoading } =
+    useDepartmentNames();
+  const allModules = useLoaderData();
+
+  // Fetch current permissions for edit mode
+  const { data: currentPermissions = [], isLoading: isPermissionsLoading } =
+    useQuery({
+      queryKey: ["modulePermissions", roleId, departmentId],
+      queryFn: async () => {
+        const response = await api.get(
+          `Module/edit-module-access/${roleId}/${departmentId}`
+        );
+        console.log(response.data);
+        return response.data || [];
+      },
+      enabled: isEditMode,
+    });
 
   const [selectedModules, setSelectedModules] = useState([]);
   const [form, setForm] = useState({
@@ -45,23 +62,73 @@ const AddUserAcess = () => {
     severity: "warning",
   });
 
-  const submitMutation = useMutation({
+  // Set form values when in edit mode
+  useEffect(() => {
+    if (isEditMode) {
+      setForm({
+        DepartmentId: parseInt(departmentId),
+        RoleId: parseInt(roleId),
+      });
+    }
+  }, [isEditMode, roleId, departmentId]);
+
+  useEffect(() => {
+    if (isEditMode && currentPermissions.length > 0) {
+      const selectedIds = [];
+
+      currentPermissions.forEach((permission) => {
+        selectedIds.push(`main-${permission.mainID}`);
+        if (permission.subModuleID && permission.subModuleID > 0) {
+          selectedIds.push(`sub-${permission.subModuleID}`);
+        }
+      });
+
+      setSelectedModules([...new Set(selectedIds)]); // remove duplicates
+    }
+  }, [isEditMode, currentPermissions]);
+
+  const mutation = useMutation({
     mutationFn: async (formData) => {
-      const response = await api.post("Module/setModuleAccess", formData);
-      return response.data;
+      if (isEditMode) {
+        // Update existing access
+        const response = await api.put(
+          `Module/update-module-access/${formData.RoleId}/${formData.DepartmentId}`,
+          formData,
+          { withCredentials: true }
+        );
+        return response.data;
+      } else {
+        // Create new access
+        const response = await api.post("Module/setModuleAccess", formData);
+        return response.data;
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["moduleAccessPermissions"] });
-      setForm({
-        DepartmentId: "",
-        RoleId: "",
-      });
-      setSelectedModules([]);
-      document.body.focus();
-      openSnackbar("Module access set successfully!", "success");
+      queryClient.invalidateQueries({ queryKey: ["modules"] });
+      if (!isEditMode) {
+        // Reset form only for add mode
+        setForm({
+          DepartmentId: "",
+          RoleId: "",
+        });
+        setSelectedModules([]);
+      }
+      openSnackbar(
+        isEditMode
+          ? "Module access updated successfully!"
+          : "Module access set successfully!",
+        "success"
+      );
+
+      if (isEditMode) {
+        setTimeout(() => navigate("/dashboard/Access"), 1500); //
+      }
     },
     onError: (err) => {
-      openSnackbar(`Submission failed: ${err.message}`, "error");
+      openSnackbar(
+        `${isEditMode ? "Update" : "Submission"} failed: ${err.message}`,
+        "error"
+      );
     },
   });
 
@@ -85,38 +152,48 @@ const AddUserAcess = () => {
       return;
     }
 
-    const validSelectedModules = selectedModules.filter((id) => {
-      const ids = id.split("-");
-      return (
-        ids.length === 2 && !isNaN(parseInt(ids[0])) && !isNaN(parseInt(ids[1]))
-      );
-    });
+    // Use your full tree data (richtreeview data) to find parents
+    const permissions = selectedModules.map((id) => {
+      const [type, value] = id.split("-");
+      const intValue = parseInt(value, 10);
 
-    if (validSelectedModules.length === 0) {
-      openSnackbar("Please select at least one valid module.", "warning");
-      return;
-    }
+      if (type === "main") {
+        return { MainID: intValue, SubModuleID: null };
+      } else if (type === "sub") {
+        // Hanapin parent main mula sa allModules tree
+        let parentMainId = 0;
+
+        for (const main of allModules) {
+          if (main.subModules?.some((s) => s.subModuleId === intValue)) {
+            parentMainId = main.mainId;
+            break;
+          }
+        }
+
+        return {
+          MainID: parentMainId,
+          SubModuleID: intValue,
+        };
+      }
+    });
 
     const formData = {
       DepartmentId: form.DepartmentId,
       RoleId: form.RoleId,
-      selectedModules: validSelectedModules, 
+      Permissions: permissions,
     };
 
     console.log("Submitting form data:", formData);
-    submitMutation.mutate(formData);
+    mutation.mutate(formData);
   };
 
   const getItemId = (item) => {
-    // Para lang sa mga sub-module ang ibabalik na ID
     if (item.subModuleId !== undefined) {
-      return `${item.mainId}-${item.subModuleId}`;
+      return `sub-${item.subModuleId}`;
     }
-    // Para sa mga main modules, gumamit ng ibang prefix
     if (item.mainId !== undefined && item.mainId !== null) {
-      return `parent-${item.mainId}`; // Hindi ito mapipili ng filter sa handleSubmission
+      return `main-${item.mainId}`;
     }
-
     return `unknown-${Math.random()}`;
   };
 
@@ -128,6 +205,19 @@ const AddUserAcess = () => {
     return item?.subModules || [];
   };
 
+  if ((isEditMode && isPermissionsLoading) || isRolesLoading || isDeptLoading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="100vh"
+      >
+        <CircularProgress sx={{ mr: 3 }} /> Loading...
+      </Box>
+    );
+  }
+
   return (
     <>
       <Box p={3}>
@@ -138,7 +228,7 @@ const AddUserAcess = () => {
           mb={2}
         >
           <Typography variant="h5" component="h5" fontWeight="bold">
-            Set User Access
+            {isEditMode ? "Edit User Access" : "Set User Access"}
           </Typography>
         </Stack>
         <Snackbar
@@ -167,7 +257,7 @@ const AddUserAcess = () => {
               getOptionLabel={(option) =>
                 option?.roleName || `Role ${option?.id}`
               }
-              value={roles.find((d) => d.id === form.RoleId) || null}
+              value={roles.find((r) => r.id === form.RoleId) || null}
               onChange={(event, newValue) => {
                 setForm((prev) => ({
                   ...prev,
@@ -178,6 +268,7 @@ const AddUserAcess = () => {
                 <TextField {...params} label="Role" required />
               )}
               isOptionEqualToValue={(option, value) => option.id === value.id}
+              disabled={isEditMode}
             />
           </Grid>
           <Grid size={6}>
@@ -199,6 +290,7 @@ const AddUserAcess = () => {
                 <TextField {...params} label="Department" required />
               )}
               isOptionEqualToValue={(option, value) => option.id === value.id}
+              disabled={isEditMode}
             />
           </Grid>
         </Grid>
@@ -233,9 +325,9 @@ const AddUserAcess = () => {
               label="Auto select Main modules"
             />
           </Stack>
-          <Box sx={{ height: 256, minWidth: 250, overflowY: "auto" }}>
+          <Box sx={{ height: 400, minWidth: 250, overflowY: "auto", mt: 2 }}>
             <RichTreeView
-              items={modules}
+              items={allModules}
               getItemId={getItemId}
               getItemLabel={getItemLabel}
               getItemChildren={getItemChildren}
@@ -247,14 +339,32 @@ const AddUserAcess = () => {
             />
           </Box>
         </div>
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+        <Box
+          sx={{ display: "flex", justifyContent: "flex-end", mt: 2, gap: 2 }}
+        >
+          <Button
+            variant="outlined"
+            onClick={() =>
+              isEditMode
+                ? navigate("/dashboard/Access")
+                : setSelectedModules([])
+            }
+          >
+            {isEditMode ? "Cancel" : "Clear"}
+          </Button>
           <Button
             variant="contained"
             type="submit"
             endIcon={<SendIcon />}
-            disabled={submitMutation.isPending || selectedModules.length === 0}
+            disabled={mutation.isPending || selectedModules.length === 0}
           >
-            {submitMutation.isPending ? "Submitting..." : "Submit"}
+            {mutation.isPending ? (
+              <CircularProgress size={24} />
+            ) : isEditMode ? (
+              "Update"
+            ) : (
+              "Submit"
+            )}
           </Button>
         </Box>
       </form>
@@ -262,4 +372,4 @@ const AddUserAcess = () => {
   );
 };
 
-export default AddUserAcess;
+export default EditUserAccess;

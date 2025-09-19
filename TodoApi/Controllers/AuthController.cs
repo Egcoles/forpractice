@@ -52,7 +52,7 @@ public class AuthController(IConfiguration config, IAuthRepository authRepo) : C
 
         if (!VerifyPassword(user.Password!, foundUser.Password!))
             return Unauthorized(new { error = "Invalid password" });
-        Console.WriteLine($"[LOGIN] UserID: {foundUser.UserId}, Username: {foundUser.Username}, RoleID: {foundUser.RoleId}");
+        Console.WriteLine($"[LOGIN] UserID: {foundUser.UserId}, Username: {foundUser.Username}, RoleID: {foundUser.RoleId}, DepartmentID: {foundUser.DepartmentId}");
 
         // Log the permissions of the user
         if (userPermissions.Permissions != null && userPermissions.Permissions.Count != 0)
@@ -72,7 +72,9 @@ public class AuthController(IConfiguration config, IAuthRepository authRepo) : C
         {
             new(ClaimTypes.NameIdentifier, foundUser.UserId.ToString()),
             new(ClaimTypes.Name, foundUser.Username ?? string.Empty),
-            new("RoleId", foundUser.RoleId?.ToString() ?? string.Empty)
+            new("RoleId", foundUser.RoleId?.ToString() ?? string.Empty),
+            new("DepartmentId", foundUser.DepartmentId?.ToString() ?? string.Empty)
+
         };
 
         // Add each permission to the claims
@@ -115,6 +117,7 @@ public class AuthController(IConfiguration config, IAuthRepository authRepo) : C
     public IActionResult Logout()
     {
         Response.Cookies.Delete("token");
+        Console.WriteLine("[LOGOUT] Token cookie deleted at: " + DateTime.Now);
         return Ok(new { message = "Logged out" });
     }
 
@@ -127,20 +130,27 @@ public class AuthController(IConfiguration config, IAuthRepository authRepo) : C
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-       
         var username = identity.Name;
+
         var roleIdClaim = identity.FindFirst("RoleId");
         var roleId = roleIdClaim != null ? int.Parse(roleIdClaim.Value) : (int?)null;
+
+        var departmentIdClaim = identity.FindFirst("DepartmentId");
+        var departmentId = departmentIdClaim != null ? int.Parse(departmentIdClaim.Value) : (int?)null;
+
         var permissions = identity.FindAll("Permission")
                                   .Select(c => c.Value)
                                   .ToList();
+
         return Ok(new
         {
             username,
             roleId,
+            departmentId,
             permissions
         });
     }
+
 
 
     private static string HashPassword(string password)

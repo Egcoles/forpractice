@@ -72,25 +72,18 @@ export default function DashboardLayout() {
   const [supplierOpen, setSupplierOpen] = useState(false);
   const [cocOpen, setCocOpen] = useState(false);
   const queryClient = useQueryClient();
-
   const { data, isLoading, isError, error } = useAuth();
 
   const username = data?.username || "User";
   const roleId = data?.roleId || 0;
   const permissions = data?.permissions || [];
+  console.log(permissions);
 
   // Check permission helper function
   const hasPermission = (moduleId, subModuleId) => {
     return permissions.includes(`module:${moduleId}:${subModuleId}`);
   };
-
-  // Check if user has any permission for a module
-  const hasModuleAccess = (moduleId) => {
-    return permissions.some((permission) =>
-      permission.startsWith(`module:${moduleId}:`)
-    );
-  };
-
+ 
   const isMenuOpen = Boolean(anchorEl);
   const handleToggleDrawer = () => setOpen(!open);
   const handleToggleMaintenance = () => setMaintenanceOpen(!maintenanceOpen);
@@ -106,7 +99,7 @@ export default function DashboardLayout() {
     handleMenuClose();
     try {
       await api.post("/auth/logout");
-      queryClient.removeQueries({ queryKey: ["auth"], exact: true });
+      await queryClient.removeQueries({ queryKey: ["auth"], exact: true });
     } catch (e) {
       // ignore logout errors
     }
@@ -114,7 +107,11 @@ export default function DashboardLayout() {
   };
 
   const location = useLocation();
+
   const pathnames = location.pathname.split("/").filter((x) => x);
+  const upperCamelCasePathnames = pathnames.map(
+    (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  );
 
   useEffect(() => {
     if (isError) {
@@ -446,31 +443,26 @@ export default function DashboardLayout() {
 
             {hasPermission(9, 8) && (
               <NavItem
-                icon={<EditSquareIcon />}
+                icon={<ListAltIcon />}
                 label="Quotation"
                 open={open}
                 onClick={() => navigate("quotation")}
               />
             )}
-            {hasModuleAccess(15) && (
-              <NavItem
-                icon={<EditSquareIcon />}
-                label="PO Client"
-                open={open}
-                onClick={() => navigate("client")}
-              />
-            )}
 
-            {hasModuleAccess(14) && (
-              <NavItem
-                icon={<ListAltIcon />}
-                label="PO Supplier"
-                open={open}
-                onClick={() => navigate("supplier")}
-              />
-            )}
-
-            {hasModuleAccess(7) && (
+            <NavItem
+              icon={<EditSquareIcon />}
+              label="PO Client"
+              open={open}
+              onClick={() => navigate("client")}
+            />
+            <NavItem
+              icon={<ListAltIcon />}
+              label="PO Supplier"
+              open={open}
+              onClick={() => navigate("supplier")}
+            />
+            {hasPermission(7, 3, 4, 5) && (
               <ListItem disablePadding>
                 <ListItemButton onClick={hanldeToggleRouiting}>
                   <ListItemIcon sx={{ color: "#fff" }}>
@@ -485,121 +477,140 @@ export default function DashboardLayout() {
                 </ListItemButton>
               </ListItem>
             )}
-
-            {hasModuleAccess(7) && (
+            {hasPermission(7, 3, 4, 5) && (
               <Collapse in={routing && open} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
-                  {hasPermission(7, 3) && (
-                    <NavItem
-                      icon={<FileOpenIcon />}
-                      label="PR Endorsement"
-                      open={open}
-                      indent
-                      onClick={() => navigate("/routing/pr_endorsemnet")}
-                    />
-                  )}
-                  {hasPermission(7, 5) && (
-                    <NavItem
-                      icon={<FileOpenIcon />}
-                      label="Quotation Endorsement"
-                      open={open}
-                      indent
-                      onClick={() => navigate("/routing/quotation_endorsemnet")}
-                    />
-                  )}
-                  {hasPermission(7, 4) && (
-                    <NavItem
-                      icon={<FileOpenIcon />}
-                      label="PR Approval"
-                      open={open}
-                      indent
-                      onClick={() => navigate("/routing/pr_approval")}
-                    />
-                  )}
-                  {hasPermission(7, 6) && (
-                    <NavItem
-                      icon={<FileOpenIcon />}
-                      label="Quotation Approval"
-                      open={open}
-                      indent
-                      onClick={() => navigate("/routing/quotation_approval")}
-                    />
-                  )}
+                  <NavItem
+                    icon={<FileOpenIcon />}
+                    label="PR Endorsement"
+                    open={open}
+                    indent
+                    onClick={() => navigate("/routing/pr_endorsemnet")}
+                  />
+                  <NavItem
+                    icon={<FileOpenIcon />}
+                    label="PO Endorsement"
+                    open={open}
+                    indent
+                    onClick={() => navigate("/routing/po_endorsemnet")}
+                  />
+                  <NavItem
+                    icon={<FileOpenIcon />}
+                    label="Quotation Endorsement"
+                    open={open}
+                    indent
+                    onClick={() => navigate("/routing/quotation_endorsemnet")}
+                  />
+                  <NavItem
+                    icon={<FileOpenIcon />}
+                    label="COC Endorsement"
+                    open={open}
+                    indent
+                    onClick={() => navigate("/routing/coc_endorsemnet")}
+                  />
+                  <NavItem
+                    icon={<FileOpenIcon />}
+                    label="PR Approval"
+                    open={open}
+                    indent
+                    onClick={() => navigate("/routing/pr_approval")}
+                  />
+                  <NavItem
+                    icon={<FileOpenIcon />}
+                    label="PO Approval"
+                    open={open}
+                    indent
+                    onClick={() => navigate("/routing/po_approval")}
+                  />
+                  <NavItem
+                    icon={<FileOpenIcon />}
+                    label="Quotation Approval"
+                    open={open}
+                    indent
+                    onClick={() => navigate("/routing/quotation_approval")}
+                  />
+                  <NavItem
+                    icon={<FileOpenIcon />}
+                    label="COC Approval"
+                    open={open}
+                    indent
+                    onClick={() => navigate("/routing/coc_approval")}
+                  />
                 </List>
               </Collapse>
             )}
 
-            {hasModuleAccess(12) && (
-              <ListItem disablePadding>
-                <ListItemButton onClick={handleToggleMaintenance}>
-                  <ListItemIcon sx={{ color: "#fff" }}>
-                    <AdminPanelSettingsIcon />
-                  </ListItemIcon>
-                  {open && (
-                    <>
-                      <ListItemText primary="Maintenance" />
-                      {maintenanceOpen ? <ExpandLess /> : <ExpandMore />}
-                    </>
-                  )}
-                </ListItemButton>
-              </ListItem>
-            )}
-
-            {hasModuleAccess(12, 0) && (
-              <Collapse
-                in={maintenanceOpen && open}
-                timeout="auto"
-                unmountOnExit
-              >
-                <List component="div" disablePadding>
-                  {hasPermission(12, 9) && (
-                    <NavItem
-                      icon={<GroupIcon />}
-                      label="Users"
-                      open={open}
-                      indent
-                      onClick={() => navigate("users")}
-                    />
-                  )}
-                  {hasPermission(12, 10) && (
-                    <NavItem
-                      icon={<AssignmentIndIcon />}
-                      label="Roles"
-                      open={open}
-                      indent
-                      onClick={() => navigate("roles")}
-                    />
-                  )}
-                  {hasPermission(12, 11) && (
-                    <NavItem
-                      icon={<ApartmentIcon />}
-                      label="Department"
-                      open={open}
-                      indent
-                      onClick={() => navigate("department")}
-                    />
-                  )}
-                </List>
-              </Collapse>
-            )}
-
-            {hasModuleAccess(11) && (
-              <NavItem
-                icon={<RoomPreferencesIcon />}
-                label="Modules"
-                open={open}
-                onClick={() => navigate("modules")}
-              />
-            )}
-
-            {hasModuleAccess(13) && (
-              <NavItem
-                icon={<KeyIcon />}
-                label="User Access"
-                open={open}
-                onClick={() => navigate("Access")}
-              />
-            )}
+            <ListItem disablePadding>
+              <ListItemButton onClick={handleToggleMaintenance}>
+                <ListItemIcon sx={{ color: "#fff" }}>
+                  <AdminPanelSettingsIcon />
+                </ListItemIcon>
+                {open && (
+                  <>
+                    <ListItemText primary="Maintenance" />
+                    {maintenanceOpen ? <ExpandLess /> : <ExpandMore />}
+                  </>
+                )}
+              </ListItemButton>
+            </ListItem>
+            <Collapse in={maintenanceOpen && open} timeout="auto" unmountOnExit>
+              <List component="div" disablePadding>
+                <NavItem
+                  icon={<GroupIcon />}
+                  label="Users"
+                  open={open}
+                  indent
+                  onClick={() => navigate("users")}
+                />
+                <NavItem
+                  icon={<AssignmentIndIcon />}
+                  label="Roles"
+                  open={open}
+                  indent
+                  onClick={() => navigate("roles")}
+                />
+                <NavItem
+                  icon={<ApartmentIcon />}
+                  label="Department"
+                  open={open}
+                  indent
+                  onClick={() => navigate("department")}
+                />
+                <NavItem
+                  icon={<ViewListIcon />}
+                  label="Master List"
+                  open={open}
+                  indent
+                  onClick={() => navigate("master-list")}
+                />
+                <NavItem
+                  icon={<EmailIcon />}
+                  label="SMTP"
+                  open={open}
+                  indent
+                  onClick={() => navigate("smtp")}
+                />
+                <NavItem
+                  icon={<BookIcon />}
+                  label="System Logs"
+                  open={open}
+                  indent
+                  onClick={() => navigate("system-logs")}
+                />
+              </List>
+            </Collapse>
+            <NavItem
+              icon={<RoomPreferencesIcon />}
+              label="Modules"
+              open={open}
+              onClick={() => navigate("modules")}
+            />
+            <NavItem
+              icon={<KeyIcon />}
+              label="User Access"
+              open={open}
+              onClick={() => navigate("Access")}
+            />
           </List>
 
           {open && (
@@ -633,34 +644,30 @@ export default function DashboardLayout() {
                   to="/dashboard"
                   style={{ textDecoration: "none", color: "#1976d2" }}
                 >
-                  <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
                   Home
                 </Link>
-                {pathnames.map((value, index) => {
-                  // Skip numeric values (IDs) in breadcrumb
-                  if (!isNaN(value)) return null;
+                {upperCamelCasePathnames
+                  .filter((value) => value !== "maintenance")
+                  .map((value, index, filtered) => {
+                    const to = `/${upperCamelCasePathnames
+                      .slice(0, upperCamelCasePathnames.indexOf(value) + 1)
+                      .join("/")}`;
+                    const isLast = index === filtered.length - 1;
 
-                  const to = `/${pathnames.slice(0, index + 1).join("/")}`;
-                  const isLast = index === pathnames.length - 1;
-                  const displayName =
-                    breadcrumbNameMap[value] ||
-                    value.charAt(0).toUpperCase() +
-                      value.slice(1).toLowerCase();
-
-                  return isLast ? (
-                    <Typography key={to} color="text.primary">
-                      {displayName}
-                    </Typography>
-                  ) : (
-                    <Link
-                      key={to}
-                      to={to}
-                      style={{ textDecoration: "none", color: "#1976d2" }}
-                    >
-                      {displayName}
-                    </Link>
-                  );
-                })}
+                    return isLast ? (
+                      <Typography key={to} color="text.primary">
+                        {breadcrumbNameMap[value] || value}
+                      </Typography>
+                    ) : (
+                      <Link
+                        key={to}
+                        to={to}
+                        style={{ textDecoration: "none", color: "#1976d2" }}
+                      >
+                        {breadcrumbNameMap[value] || value}
+                      </Link>
+                    );
+                  })}
               </Breadcrumbs>
             </Box>
 

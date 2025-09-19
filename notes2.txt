@@ -1,318 +1,62 @@
-CONDITIONS ON SELECTING COMPANY NAME 
-DISBALES LOCATION 
-READ ONLY COMPANY ADDRESS
 
-ENABLE LOCATION IF ALREADY SELECT COMPANY
-LOCATION CHOICES WILL DEPENDS ON SELECTED COMPANY NAME
-COPMANY ID WILL BE PASS AS PARAMETER TO GET THE LIST OF LOCATIONS
+// DEFINITION OF THE FUNCTIONS
 
-AUTOMICAL FILL COMPANY ADDRESS
-BASED ON SELECTED LOCATION
-LOCATION ID WILL BE PASS AS PARAMETER TO GET THE EXACT ADDRESS 
+Spread Operator (...):
+The spread operator is used to expand an iterable (like an array or string) into individual elements or to expand an object into key-value pairs.
+It is commonly used for:
+Creating shallow copies of arrays or objects: This allows modification of the copy without affecting the original.
+Concatenating arrays or merging objects: Elements or properties from multiple sources can be combined into a new data structure.
+Passing arguments to functions: Elements of an array can be passed as individual arguments to a function.
+Ternary Operator (condition ? expression1 : expression2):
+The ternary operator is a concise way to write conditional expressions, providing an alternative to simple if-else statements.
+It evaluates a condition. If the condition is true, expression1 is evaluated and its result is returned. If the condition is false, expression2 is evaluated and its result is returned.
+It is typically used for:
+Assigning values conditionally: A variable can be assigned one of two values based on a condition.
+Returning values conditionally: A function can return different values based on a condition.
+Key Differences:
+Purpose:
+The spread operator focuses on data manipulation (expanding and combining data structures), while the ternary operator focuses on conditional logic (choosing between two outcomes).
+Syntax:
+The spread operator uses ... before an iterable or object, while the ternary operator uses ? and : to separate the condition and the two possible expressions.
+Context:
+The spread operator is used within array literals, object literals, or function calls, whereas the ternary operator is used as an expression that evaluates to a single value.
 
+============================================================================================
 
-The MVC pattern defines the overall structure of the user interaction, while the domain model defines the core business, and the ORM handles the technical details of the database interaction.
-
-
-
-
-===================================
-VALIDATIONS
--cannot add new row if item,desc,qty,unitcost are empty
-- duplicate item
-
-On preview
--validate all required fields
---client name
---project name
---company name
---location
---address
---vat
-submittedby
-endorser
-approver
-each row must no empty
-
-On submit
--enable only after preview
-
-create 
-table for company 
-
-FUNCTIONALITY
-+Select Company
-=render list of location for that company
-+select location
-=automaticaly fill in the company address
-
-+Select Item
-= automatically fill in the item desc
-= also unit is automically fill in
-+Item desc is editable
-
-*VALIDATIONS ON INPUTS*
-+Input Quantity
-= allow only greather than 0 
-+On submit do not allow QTY == 0
-
-+Input UnitCost 
-= allow only positive numbers
-
-+Input Markup
-= allow only whole numbers
-= greather than 0
-+ on submit do not allow 0
-
-+Item already selected on that row 
-= if item already selected previous row 
-return = 'This item already added. Please review your input '
-+Total Cost is read only
-
-**COMPUTATIONS**
-PerRowComputation
-Total cost = qty * unitcost
-Over all total = qty * unitcost
-grand total = qty * unitcost
-if has markup {
-  new total cost = total cost * markup%  
-  new over all total = over all total * markup% 
-  new grand total = grand total * markup% 
-}
-if has discount {
-  new over all total = over all total - discount% 
-  new grand total = grand total - discount%
-}
-if has VAT {
-  new grand total = grand total * 1.12 vat
-}
-
-OverAllComputation
-overall total = perRowtotalcost ++
-grandtotal = perRowtotalcost ++
+The double exclamation mark (!!) is not a standard, single operator in most programming languages. It's typically used as a double negation or logical NOT operator in sequence. It effectively converts a value to its boolean equivalent and then negates it, resulting in a boolean value. 
 
 
-pag kuha ng discount ay
-qty * unit cost = total cost
-total cost * discount = less 
-total - less = new total cost
+Single ! (NOT): The single exclamation mark is the logical NOT operator. It inverts the truthiness of a value. If the value is considered true, !value will be false, and vice versa.
+Double !! (Double NOT): When used twice in a row, !!value first negates the value (using !value) and then negates the result again. This has the effect of converting the value to its boolean equivalent.
 
-pag kuha ng markup ay
-qty * unit cost = total cost
-total * cost + markup = increase price
-total cost + increase price = new total cost
+    let str = "hello";
+    let num = 5;
+    let falsy = "";
 
-
-
-=======================================
-QUOTATION TABLE
--Control No
-- Project Name
-- Client Name
--Company
-- Location
--Status
--Entry Date
-- Action 
-=EDIT
-=PRINT
-
-QUOTATION CREATE
--clientName
--PrjectName
--companyName - need db 
--location
--CompanyAddress
--Terms
--VAT = 1.12
--discount
--submittedBy
--approver
--endorser
-
-ITEM
--item
--qty
--unitCost
--markupPercentage
--overallTotal
--GrandTotal - if with vat 
-the amount is different from overallTotal
-
-----------------------------------------------------
-FUNCTIONALITY
-+Select Company
-=render list of location for that company
-+select location
-=automaticaly fill in the company address
-
-+Select Item
-= automatically fill in the item desc
-= also unit is automically fill in
-+Item desc is editable
-
-*VALIDATIONS ON INPUTS*
-+Input Quantity
-= allow only greather than 0 
-+On submit do not allow QTY == 0
-
-+Input UnitCost 
-= allow only positive numbers
-
-+Input Markup
-= allow only whole numbers
-= greather than 0
-+ on submit do not allow 0
-
-+Item already selected on that row 
-= if item already selected previous row 
-return = 'This item already added. Please review your input '
-+Total Cost is read only
-
-**COMPUTATIONS**
-PerRowComputation
-Total cost = qty * unitcost
-Over all total = qty * unitcost
-grand total = qty * unitcost
-if has markup {
-  new total cost = total cost * markup%  
-  new over all total = over all total * markup% 
-  new grand total = grand total * markup% 
-}
-if has discount {
-  new over all total = over all total - discount% 
-  new grand total = grand total - discount%
-}
-if has VAT {
-  new grand total = grand total * 1.12 vat
-}
-
-OverAllComputation
-overall total = perRowtotalcost ++
-grandtotal = perRowtotalcost ++
+    console.log(!!str); // true
+    console.log(!!num); // true
+    console.log(!!falsy); // false
 
 
-pag kuha ng discount ay
-qty * unit cost = total cost
-total cost * discount = less 
-total - less = new total cost
-
-pag kuha ng markup ay
-qty * unit cost = total cost
-total * cost + markup = increase price
-total cost + increase price = new total cost
-
-
-
-
--------------------------------------------------
--REPORT VIEW
--DATE REQUIRED
-- PR NO
--DATE NEEDED
-- PROJECT DESCRIPTION
--ITEM NO
-- ITEM DESCRIPTION
-- QTY
-- UNIT
-_ SUPPLIER
--PRICE
--TOTAL
--createdby
--CAnvassed by
--Endorser
--Approver
+===============================================================================================
+A "query client" in the context of web development, particularly with libraries like TanStack Query (formerly React Query), refers to an instance that manages data fetching, caching, synchronization, and state management for queries within an application.
+Key aspects of a query client:
+Centralized Cache Management: The query client holds and manages the cache of fetched data, ensuring efficient data retrieval and reducing redundant requests.
+Provider Integration: In front-end frameworks like React, the query client is typically provided to the application using a QueryClientProvider, making the query client and its functionalities accessible throughout the component tree.
+Query and Mutation Operations: It provides methods and hooks for performing various operations, including:
+useQuery: For fetching and subscribing to data.
+useMutation: For performing data modifications (e.g., creating, updating, deleting).
+invalidateQueries: To mark cached data as stale, triggering refetches.
+removeQueries: To remove specific queries from the cache.
+cancelQueries: To cancel outgoing query requests.
+Configuration and Customization: The query client can be configured with various options, such as default query functions, cache time, stale time, and retry behavior.
+Server-Side Rendering (SSR) and Hydration: In SSR environments, a new query client instance is often created for each request on the server to prevent data sharing between users and then dehydrated to the client for hydration, ensuring a smooth transition.
+In summary, a query client is a crucial component in managing data fetching and state in web applications, providing a centralized and efficient way to handle queries and mutations. It plays a vital role in maintaining the responsiveness and performance of applications, especially in complex scenarios involving multiple queries and mutations.
 
 
-paanu to gagawan ng model using dapper
-sympre ang view nito sa fronend ay ganto
-PR NUMBER - isang valuenlng naka display 
-PR_ProcjectDesc - is dn
-Created by 
-Canvassed by:
-Endorser: 
-Approver:
+====================================================
 
-ITEMS ay naka populate sa table ng ganto
-item id | Item Desc | Qty |Unit |Supplier ---
-
-price bawat item and total of price bawat supplier
-===============================================
-MODEL
-PRID
-PRGRID_ID
-PRNUMBEER
-PROJECTDESC
-ITEMID
-ITEMDESC
-QTY
-UNIT
-SUPPLIERNAME
-PRICE
-TOTAL
-ENDROSER_NAME
-APPROVER_NAME
-CREATEDBY_NAME
-CANVASSEDSBY_NAME
- 
-============================================
-1.Preview slider for pdf viewer
-2. Multiple Supplier selection
-3. If Change access how does it need reload
-
-
-Preview data: 
-date
-prno.
-project description
-item 
-description,
-qty,
-unit,
-suplier
-price
-total
-+===========================================+
-TODO:: ADD Button to Add Supplier
--table will be responsive : have a horizontal scroll
-
-DECLARE @PRId INT = 35;
-
-;WITH UniqueSuppliers AS (
-    SELECT 
-        a.PR_ID,
-        a.PR_REFERENCENO,
-        a.PR_PROJECTDESC,
-        b.ITEMID,
-        b.ITEM_DESCRIPTION,
-        b.QTY,
-        c.SupplierID,
-        c.Price,
-        c.Total,
-        ROW_NUMBER() OVER(PARTITION BY a.PR_ID, b.ITEMID ORDER BY c.Price) as RowNum
-    FROM 
-        [PRO_USER].[dbo].[PURCHASE_REQUISITION] a
-    LEFT JOIN 
-        [PRO_USER].[dbo].[PR_GRID] b ON a.PR_ID = b.PRID
-    LEFT JOIN 
-        [PRO_USER].[dbo].[PR_SUPPLIERS] c ON b.PRGRID_Id = c.PRGRID_Id
-    WHERE 
-        a.PR_ID = @PRId 
-        AND c.SupplierID IS NOT NULL
-)
-SELECT 
-    PR_ID,
-    PR_REFERENCENO,
-    PR_PROJECTDESC,
-    ITEMID,
-    ITEM_DESCRIPTION,
-    QTY,
-    SupplierID,
-    Price,
-    Total
-FROM 
-    UniqueSuppliers
-WHERE 
-    RowNum = 1  -- Selects first occurrence, effectively removing duplicates
-ORDER BY 
-    PR_ID DESC; 
+Using Table-Valued Parameters (TVPs) in SQL is beneficial because they allow you to pass multiple rows of data to a stored procedure or function in a single call, which offers three key advantages: 
+Improved performance: TVPs minimize network round-trips to the database, which is more efficient for bulk data operations than executing many individual statements.
+Simplified code: They provide a clean, strongly typed way to handle tabular data, eliminating complex workarounds like sending comma-separated strings or dynamic SQL.
+Enhanced security: Since the data is passed as a parameter with a defined schema, TVPs reduce the risk of SQL injection that can be associated with dynamic SQL solutions. 
